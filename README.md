@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="magicsmoke-logo1.png" alt="MagicSmoke Logo1" width="600" />
+  <img src="MagicSmoke Logo1.png" alt="MagicSmoke Logo1" width="600" />
 </p>
 
 <br />
