@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="magicsmoke-logo.jpg" alt="MagicSmoke Logo" width="600" />
+</p>
+
+<br />
 # MagicSmoke
 
 An open-source 3D sandbox for wiring sensors, running real microcontroller code, and testing robotics in a physics environment.
