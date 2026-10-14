@@ -19,7 +19,7 @@ I'm a robotics student, and I got tired of the current state of simulation tools
 2. **3D robotics simulators (Gazebo, Webots, CoppeliaSim):** Great physics and ROS integration, but they completely abstract away the electronics. You don't wire pins, you don't deal with I2C addresses or pull-up resistors, and you aren't running raw microcontroller firmware.
 
 There is no single tool where you can grab a microcontroller, wire up 15 different IoT and robotics sensors pin-by-pin, flash your actual code, and watch it interact with a 3D world. 
-So I'm building one.
+So I'm building one
 
 ## What it does (and will do)
 * **Actual pin-to-pin wiring in 3D:** Connect jumper wires between boards, breadboards, and sensors. If you wire `SDA` and `SCL` backwards or forget a common ground, it won't work—just like real hardware.
