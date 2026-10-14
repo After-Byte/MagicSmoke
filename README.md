@@ -16,7 +16,7 @@ An open-source 3D sandbox for wiring sensors, running real microcontroller code,
 ## Why I'm building this
 I'm a robotics student, and I got tired of the current state of simulation tools. Right now, you basically have to pick your poison:
 1. **2D circuit simulators (Wokwi, Tinkercad, Fritzing):** Great for hooking up an Arduino to an LED or a basic ultrasonic sensor. Terrible the moment you want to put those parts on a moving 3D chassis, test spatial physics, or use a sensor that isn't in their tiny default catalog.
-2. **3D robotics simulators (Gazebo, Webots, CoppeliaSim):** Great physics and ROS integration, but they completely abstract away the electronics. You don't wire pins, you don't deal with I2C addresses or pull-up resistors, and you aren't running raw microcontroller firmware.
+2. **3D robotics simulators (Gazebo, Webots, CoppeliaSim):** Great physics and ROS integration, but they completely abstract away the electronics. You don't wire pins, you don't deal with I2C addresses or pull-up resistors, and you aren't running raw microcontroller firmware
 
 There is no single tool where you can grab a microcontroller, wire up 15 different IoT and robotics sensors pin-by-pin, flash your actual code, and watch it interact with a 3D world. 
 So I'm building one
