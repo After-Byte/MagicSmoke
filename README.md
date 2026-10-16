@@ -35,3 +35,50 @@ parts/sensors/hc-sr04/
 ├── mesh.glb        # Low-poly 3D model with named empties for pins
 ├── part.json       # Pin definitions, voltage limits, communication protocol
 └── behavior.ts     # How the part interacts with the 3D world (e.g., raycast -> pulse ECHO pin)
+```
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Node.js v18+ (tested on Node v24.14.1, npm 11.11.0)
+
+### Installation & Running Locally
+```bash
+# Install dependencies
+npm install
+
+# Start local development server
+npm run dev
+
+# Run Vitest unit test suite (Circuit engine, TB6612FNG, N20 Motor model, Kinematics)
+npm run test
+
+# Run Playwright end-to-end browser tests
+npx playwright test
+```
+
+Open `http://localhost:5173` in your browser.
+
+---
+
+## Architecture & Hardware Simulation Model
+
+1. **Firmware Runtime (`src/runtime/`):**
+   - Clean `FirmwareRuntime` adapter interface for hardware/behavioral MCU targets.
+   - Initial reference target: `ESP32BehavioralRuntime` simulating Arduino C++ with `ledcWrite()`, `digitalWrite()`, `Serial`, and asynchronous timer steps.
+
+2. **Circuit Engine & Netlist (`src/circuit/`):**
+   - Transitive graph evaluation of connected nets.
+   - Electrical rules check (missing common ground between logic & battery, unpowered VCC/VM detection).
+   - Dynamic wire drawing with interactive bezier curves, pin dragging, and wire deletion.
+
+3. **Motor Driver & Actuators (`src/circuit/TB6612FNGDriver.ts` & `src/robot/`):**
+   - Toshiba TB6612FNG dual H-bridge truth table with slow-decay PWM response.
+   - Electromechanical N20 micro-gear motor model with acceleration/deceleration damping.
+   - Kinematic differential-drive chassis translation and yaw rotation.
+
+4. **3D Viewport (`src/three/`):**
+   - Procedural robot chassis, battery pack, ESP32 module, TB6612FNG board, and rotating wheels rendered with Three.js WebGL and PCF soft shadows.
+   - Custom mouse orbit, pan, and zoom controls with reset capabilities.
