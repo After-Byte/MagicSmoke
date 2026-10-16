@@ -65,20 +65,38 @@ Open `http://localhost:5173` in your browser.
 
 ## Architecture & Hardware Simulation Model
 
-1. **Firmware Runtime (`src/runtime/`):**
-   - Clean `FirmwareRuntime` adapter interface for hardware/behavioral MCU targets.
-   - Initial reference target: `ESP32BehavioralRuntime` simulating Arduino C++ with `ledcWrite()`, `digitalWrite()`, `Serial`, and asynchronous timer steps.
+1. **Workspace IDE & UX Layout (`src/`):**
+   - **Two-Panel Default Workspace:** Primary layout places the Arduino C++ Monaco Editor on the left and the interactive Pin-to-Pin Circuit Schematic on the right, providing maximum workspace for coding and wiring.
+   - **3D Robotics Viewport Drawer:** Kept closed by default; toggled via the persistent right-edge arrow pill, top navbar control, or `Esc` key. Slides out smoothly without distorting 3D proportions (integrated `ResizeObserver`). Drawer width is fully draggable and resizable.
+   - **Interactive Circuit Canvas:** Supports pan & zoom (scroll wheel + canvas drag), draggable component positioning, 20px enlarged pin hit targets with halos, and Delete/Backspace wire disconnection.
+   - **Collapsible Diagnostics Console:** Features a compact 1-line status bar (error/warning counts and telemetry summary) and auto-expands on compiler errors.
+   - **Responsive Breakpoints:** Smoothly transitions to tabbed view (`editor` | `circuit` | `viewport`) on narrow viewports (<880px).
 
-2. **Circuit Engine & Netlist (`src/circuit/`):**
+2. **Canonical Hardware Configuration (`src/project/defaultProject.ts`):**
+   Single authoritative configuration guarantees alignment between ESP32 sketch code and circuit netlist:
+   - `PWMA` = GPIO25 (Left Motor PWM)
+   - `AIN1` = GPIO26 (Left Motor Dir 1)
+   - `AIN2` = GPIO27 (Left Motor Dir 2)
+   - `PWMB` = GPIO14 (Right Motor PWM)
+   - `BIN1` = GPIO18 (Right Motor Dir 1)
+   - `BIN2` = GPIO19 (Right Motor Dir 2)
+   - `STBY` = GPIO23 (Driver Standby Enable)
+   - Power Rails: `3V3` → `VCC` (3.3V logic), Battery `POS` → `VM` (7.4V motor supply), with shared ground.
+
+3. **Firmware Runtime (`src/runtime/`):**
+   - Clean `FirmwareRuntime` adapter interface for hardware/behavioral MCU targets.
+   - Initial reference target: `ESP32BehavioralRuntime` simulating Arduino C++ with `ledcWrite()`, `digitalWrite()`, `Serial`, parameter defaults, user functions, and asynchronous timer steps. Discloses runtime limitations honestly.
+
+4. **Circuit Engine & Netlist (`src/circuit/`):**
    - Transitive graph evaluation of connected nets.
    - Electrical rules check (missing common ground between logic & battery, unpowered VCC/VM detection).
    - Dynamic wire drawing with interactive bezier curves, pin dragging, and wire deletion.
 
-3. **Motor Driver & Actuators (`src/circuit/TB6612FNGDriver.ts` & `src/robot/`):**
+5. **Motor Driver & Actuators (`src/circuit/TB6612FNGDriver.ts` & `src/robot/`):**
    - Toshiba TB6612FNG dual H-bridge truth table with slow-decay PWM response.
    - Electromechanical N20 micro-gear motor model with acceleration/deceleration damping.
    - Kinematic differential-drive chassis translation and yaw rotation.
 
-4. **3D Viewport (`src/three/`):**
+6. **3D Viewport (`src/three/`):**
    - Procedural robot chassis, battery pack, ESP32 module, TB6612FNG board, and rotating wheels rendered with Three.js WebGL and PCF soft shadows.
-   - Custom mouse orbit, pan, and zoom controls with reset capabilities.
+   - Dual lighting rig (key light + cyan rim light), cyan wheel hubs, and custom mouse orbit, pan, and zoom controls with reset capabilities.

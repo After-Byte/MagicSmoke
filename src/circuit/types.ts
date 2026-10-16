@@ -39,6 +39,7 @@ export interface ComponentInstance {
   name: string;
   position: { x: number; y: number };
   pins: Record<string, PinDefinition>;
+  dimensions?: { width: number; height: number };
 }
 
 export interface WireConnection {

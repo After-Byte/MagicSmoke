@@ -212,4 +212,93 @@ describe('ESP32 Firmware Runtime Compilation & Execution', () => {
     runtime.step(0.5);
     expect(pwms[25]).toBe(0);
   });
+
+  it('compiles and executes sketches with custom helper functions like moveForward() and stopMotors()', async () => {
+    const runtime = new ESP32BehavioralRuntime();
+    const sketch = `
+      #include <Arduino.h>
+      constexpr int PWMA = 25;
+      constexpr int AIN1 = 26;
+      constexpr int AIN2 = 27;
+      constexpr int STBY = 23;
+
+      void moveForward(int spd = 200) {
+        drive(spd, spd);
+      }
+
+      void stopMotors() {
+        drive(0, 0);
+      }
+
+      void setup() {
+        pinMode(STBY, OUTPUT);
+        digitalWrite(STBY, HIGH);
+      }
+
+      void loop() {
+        moveForward(180);
+        delay(300);
+        stopMotors();
+        delay(300);
+      }
+    `;
+
+    const result = await runtime.compile(sketch);
+    expect(result.success).toBe(true);
+
+    const pwms: Record<number, number> = {};
+    runtime.setEvents({
+      onPWMChange: (p, d) => { pwms[p] = d; },
+    });
+
+    runtime.start();
+    runtime.step(0.05); // inside moveForward(180)
+    expect(pwms[25]).toBeCloseTo(180 / 255.0, 2);
+
+    runtime.step(0.35); // inside stopMotors()
+    expect(pwms[25]).toBe(0);
+  });
+
+  it('allows empty loop() without throwing compiler errors', async () => {
+    const runtime = new ESP32BehavioralRuntime();
+    const sketch = `
+      void setup() {
+        Serial.println("Setup only");
+      }
+      void loop() {
+        // empty loop is valid
+      }
+    `;
+    const result = await runtime.compile(sketch);
+    expect(result.success).toBe(true);
+    expect(result.errors).toBeUndefined();
+  });
+
+  it('correctly pauses and resumes execution without losing state', async () => {
+    const runtime = new ESP32BehavioralRuntime();
+    const sketch = `
+      void setup() {
+        digitalWrite(23, HIGH);
+      }
+      void loop() {
+        drive(150, 150);
+        delay(500);
+      }
+    `;
+    await runtime.compile(sketch);
+    const pwms: Record<number, number> = {};
+    runtime.setEvents({ onPWMChange: (p, d) => { pwms[p] = d; } });
+
+    runtime.start();
+    runtime.step(0.1);
+    expect(pwms[25]).toBeGreaterThan(0);
+
+    runtime.pause();
+    expect(runtime.isPaused()).toBe(true);
+    runtime.step(1.0); // stepped while paused -> no change
+
+    runtime.resume();
+    expect(runtime.isPaused()).toBe(false);
+  });
 });
+

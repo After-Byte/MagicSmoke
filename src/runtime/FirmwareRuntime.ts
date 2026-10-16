@@ -13,11 +13,15 @@ export interface FirmwareRuntimeEvents {
 export interface FirmwareRuntime {
   compile(sourceCode: string): Promise<{ success: boolean; errors?: string[] }>;
   start(): void;
+  pause(): void;
+  resume(): void;
   stop(): void;
   reset(): void;
   isRunning(): boolean;
+  isPaused(): boolean;
   step(deltaTimeSeconds: number): void;
   setEvents(events: FirmwareRuntimeEvents): void;
   getRuntimeName(): string;
   isGenuineHardwareEmulation(): boolean;
+  getLimitations(): string[];
 }

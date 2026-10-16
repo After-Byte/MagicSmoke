@@ -32,12 +32,68 @@ export class CircuitEngine {
     return Array.from(this.components.values());
   }
 
-  public addWire(wire: WireConnection) {
-    this.wires.set(wire.id, wire);
+  /**
+   * Validate a proposed wire connection before adding it to the circuit
+   */
+  public validateConnection(
+    fromCompId: string,
+    fromPinId: string,
+    toCompId: string,
+    toPinId: string
+  ): { valid: boolean; reason?: string } {
+    const fromComp = this.components.get(fromCompId);
+    const toComp = this.components.get(toCompId);
+
+    if (!fromComp) {
+      return { valid: false, reason: `Source component '${fromCompId}' does not exist.` };
+    }
+    if (!toComp) {
+      return { valid: false, reason: `Destination component '${toCompId}' does not exist.` };
+    }
+    if (fromCompId === toCompId) {
+      return { valid: false, reason: 'Self-connections are prohibited.' };
+    }
+
+    const fromPin = fromComp.pins[fromPinId];
+    const toPin = toComp.pins[toPinId];
+
+    if (!fromPin) {
+      return { valid: false, reason: `Pin '${fromPinId}' does not exist on '${fromComp.name}'.` };
+    }
+    if (!toPin) {
+      return { valid: false, reason: `Pin '${toPinId}' does not exist on '${toComp.name}'.` };
+    }
+
+    // Check for duplicate wire (in either direction)
+    const duplicate = Array.from(this.wires.values()).some(
+      (w) =>
+        (w.fromComponentId === fromCompId && w.fromPinId === fromPinId && w.toComponentId === toCompId && w.toPinId === toPinId) ||
+        (w.fromComponentId === toCompId && w.fromPinId === toPinId && w.toComponentId === fromCompId && w.toPinId === fromPinId)
+    );
+
+    if (duplicate) {
+      return { valid: false, reason: 'Duplicate connection: these pins are already connected.' };
+    }
+
+    return { valid: true };
   }
 
-  public removeWire(id: string) {
-    this.wires.delete(id);
+  public addWire(wire: WireConnection): boolean {
+    const check = this.validateConnection(
+      wire.fromComponentId,
+      wire.fromPinId,
+      wire.toComponentId,
+      wire.toPinId
+    );
+    if (!check.valid) {
+      return false;
+    }
+    this.wires.set(wire.id, wire);
+    return true;
+  }
+
+  public removeWire(id: string): boolean {
+    return this.wires.delete(id);
   }
 
   public getWire(id: string): WireConnection | undefined {
