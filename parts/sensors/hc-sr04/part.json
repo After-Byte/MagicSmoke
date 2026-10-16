@@ -1,0 +1,26 @@
+{
+  "schema_version": "1.0.0",
+  "id": "hc-sr04",
+  "name": "HC-SR04 Ultrasonic Distance Sensor",
+  "category": "sensor",
+  "description": "4-pin ultrasonic distance measuring module using 40kHz acoustic pulses",
+  "operating_voltage": {
+    "min": 4.5,
+    "typical": 5.0,
+    "max": 5.5
+  },
+  "current_draw_typical_ma": 15,
+  "protocol": "GPIO_PULSE",
+  "pins": [
+    { "name": "VCC", "type": "power", "description": "5V Power Supply Input", "nominal_voltage": 5.0, "blender_empty": "pin_VCC" },
+    { "name": "TRIG", "type": "digital_in", "description": "Trigger Input (10µs pulse)", "blender_empty": "pin_TRIG" },
+    { "name": "ECHO", "type": "digital_out", "description": "Echo Output Pulse (proportional to flight time)", "blender_empty": "pin_ECHO" },
+    { "name": "GND", "type": "ground", "description": "Ground", "nominal_voltage": 0.0, "blender_empty": "pin_GND" }
+  ],
+  "visual": {
+    "mesh_file": "mesh.glb",
+    "color_hex": "#2563eb",
+    "dimensions_m": [0.045, 0.02, 0.015]
+  },
+  "behavior_script": "behavior.ts"
+}

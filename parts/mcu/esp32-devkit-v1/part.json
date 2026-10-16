@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0.0",
+  "id": "esp32-devkit-v1",
+  "name": "ESP32 DevKit V1",
+  "category": "mcu",
+  "description": "Espressif ESP32 dual-core Xtensa LX6 development board with Wi-Fi and Bluetooth",
+  "operating_voltage": {
+    "min": 3.0,
+    "typical": 3.3,
+    "max": 3.6
+  },
+  "current_draw_typical_ma": 80,
+  "pins": [
+    { "name": "3V3", "type": "power", "description": "3.3V Regulated Output", "nominal_voltage": 3.3, "blender_empty": "pin_3V3" },
+    { "name": "GND", "type": "ground", "description": "System Ground", "nominal_voltage": 0.0, "blender_empty": "pin_GND" },
+    { "name": "GPIO23", "type": "digital_out", "description": "GPIO 23 / VSPI MOSI (used for STBY)", "blender_empty": "pin_D23" },
+    { "name": "GPIO25", "type": "pwm_out", "description": "GPIO 25 / DAC1 (used for PWMA)", "blender_empty": "pin_D25" },
+    { "name": "GPIO26", "type": "digital_out", "description": "GPIO 26 / DAC2 (used for AIN1)", "blender_empty": "pin_D26" },
+    { "name": "GPIO27", "type": "digital_out", "description": "GPIO 27 (used for AIN2)", "blender_empty": "pin_D27" },
+    { "name": "GPIO14", "type": "pwm_out", "description": "GPIO 14 / HSPI CLK (used for PWMB)", "blender_empty": "pin_D14" },
+    { "name": "GPIO18", "type": "digital_out", "description": "GPIO 18 / VSPI CLK (used for BIN1)", "blender_empty": "pin_D18" },
+    { "name": "GPIO19", "type": "digital_out", "description": "GPIO 19 / VSPI MISO (used for BIN2)", "blender_empty": "pin_D19" }
+  ],
+  "visual": {
+    "mesh_file": "mesh.glb",
+    "color_hex": "#059669",
+    "dimensions_m": [0.028, 0.008, 0.052]
+  }
+}

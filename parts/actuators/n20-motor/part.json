@@ -1,0 +1,27 @@
+{
+  "schema_version": "1.0.0",
+  "id": "n20-motor",
+  "name": "N20 Micro Metal Gear Motor",
+  "category": "actuator",
+  "description": "6V N20 miniature DC motor with 50:1 metal reduction gearbox and dual lead terminals",
+  "operating_voltage": {
+    "min": 3.0,
+    "typical": 6.0,
+    "max": 9.0
+  },
+  "current_draw_typical_ma": 60,
+  "pins": [
+    { "name": "M_POS", "type": "motor_out", "description": "Motor Positive Terminal", "blender_empty": "pin_M_POS" },
+    { "name": "M_NEG", "type": "motor_out", "description": "Motor Negative Terminal", "blender_empty": "pin_M_NEG" }
+  ],
+  "physics": {
+    "mass_kg": 0.015,
+    "collision_shape": "cylinder",
+    "friction": 0.8
+  },
+  "visual": {
+    "mesh_file": "mesh.glb",
+    "color_hex": "#38bdf8",
+    "dimensions_m": [0.012, 0.01, 0.034]
+  }
+}

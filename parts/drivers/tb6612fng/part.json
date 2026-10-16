@@ -1,0 +1,35 @@
+{
+  "schema_version": "1.0.0",
+  "id": "tb6612fng",
+  "name": "TB6612FNG Dual H-Bridge Motor Driver",
+  "category": "driver",
+  "description": "Toshiba TB6612FNG dual motor driver with MOSFET H-bridge outputs and standby mode",
+  "operating_voltage": {
+    "min": 2.7,
+    "typical": 3.3,
+    "max": 5.5
+  },
+  "current_draw_typical_ma": 2,
+  "protocol": "DISCRETE_PWM_HBRIDGE",
+  "pins": [
+    { "name": "VM", "type": "power", "description": "Motor Power Supply (4.5V - 15V)", "blender_empty": "pin_VM" },
+    { "name": "VCC", "type": "power", "description": "Logic Power Supply (2.7V - 5.5V)", "nominal_voltage": 3.3, "blender_empty": "pin_VCC" },
+    { "name": "GND", "type": "ground", "description": "Common Ground", "nominal_voltage": 0.0, "blender_empty": "pin_GND" },
+    { "name": "PWMA", "type": "digital_in", "description": "Motor A PWM Speed Control", "blender_empty": "pin_PWMA" },
+    { "name": "AIN1", "type": "digital_in", "description": "Motor A Direction Input 1", "blender_empty": "pin_AIN1" },
+    { "name": "AIN2", "type": "digital_in", "description": "Motor A Direction Input 2", "blender_empty": "pin_AIN2" },
+    { "name": "STBY", "type": "digital_in", "description": "Standby Control (Active High)", "blender_empty": "pin_STBY" },
+    { "name": "BIN1", "type": "digital_in", "description": "Motor B Direction Input 1", "blender_empty": "pin_BIN1" },
+    { "name": "BIN2", "type": "digital_in", "description": "Motor B Direction Input 2", "blender_empty": "pin_BIN2" },
+    { "name": "PWMB", "type": "digital_in", "description": "Motor B PWM Speed Control", "blender_empty": "pin_PWMB" },
+    { "name": "AO1", "type": "motor_out", "description": "Motor A Terminal 1", "blender_empty": "pin_AO1" },
+    { "name": "AO2", "type": "motor_out", "description": "Motor A Terminal 2", "blender_empty": "pin_AO2" },
+    { "name": "BO1", "type": "motor_out", "description": "Motor B Terminal 1", "blender_empty": "pin_BO1" },
+    { "name": "BO2", "type": "motor_out", "description": "Motor B Terminal 2", "blender_empty": "pin_BO2" }
+  ],
+  "visual": {
+    "mesh_file": "mesh.glb",
+    "color_hex": "#dc2626",
+    "dimensions_m": [0.02, 0.005, 0.02]
+  }
+}
