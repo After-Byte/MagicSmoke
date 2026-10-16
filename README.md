@@ -35,3 +35,15 @@ parts/sensors/hc-sr04/
 ├── mesh.glb        # Low-poly 3D model with named empties for pins
 ├── part.json       # Pin definitions, voltage limits, communication protocol
 └── behavior.ts     # How the part interacts with the 3D world (e.g., raycast -> pulse ECHO pin)
+Project Vision Summary
+
+MagicSmoke fills the gap between 2D circuit simulators (Wokwi, Tinkercad) and 3D robotics simulators (Gazebo, Webots):
+
+Feature	Wokwi	Gazebo	MagicSmoke
+Pin-to-pin wiring	✅	❌	✅
+Real firmware (C/C++)	✅	❌	✅
+3D physics world	❌	✅	✅
+Spatial sensors (raycast)	❌	✅	✅
+Browser-based	✅	❌	✅
+Common-ground enforcement	❌	❌	✅
+"Magic Smoke" fault effects	❌	❌	✅
