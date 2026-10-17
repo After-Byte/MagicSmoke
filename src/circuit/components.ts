@@ -78,3 +78,34 @@ export function createN20Motor(id: string, name: string, pos: { x: number; y: nu
   };
 }
 
+export function createGroundBus(id = 'gnd_bus_1', pos = { x: 340, y: 510 }): ComponentInstance {
+  return {
+    id,
+    type: 'GROUND_BUS',
+    name: 'Common Ground Bus',
+    position: pos,
+    dimensions: { width: 140, height: 75 },
+    pins: {
+      'GND1': { id: 'GND1', name: 'GND', type: PinType.GROUND, description: 'Common Ground Port 1', nominalVoltage: 0, offset: { x: 25, y: 55 } },
+      'GND2': { id: 'GND2', name: 'GND', type: PinType.GROUND, description: 'Common Ground Port 2', nominalVoltage: 0, offset: { x: 55, y: 55 } },
+      'GND3': { id: 'GND3', name: 'GND', type: PinType.GROUND, description: 'Common Ground Port 3', nominalVoltage: 0, offset: { x: 85, y: 55 } },
+      'GND4': { id: 'GND4', name: 'GND', type: PinType.GROUND, description: 'Common Ground Port 4', nominalVoltage: 0, offset: { x: 115, y: 55 } },
+    },
+  };
+}
+
+export function createHCSR04Sensor(id = 'sonar_1', pos = { x: 620, y: 380 }): ComponentInstance {
+  return {
+    id,
+    type: 'HC_SR04',
+    name: 'HC-SR04 Ultrasonic Sensor',
+    position: pos,
+    dimensions: { width: 170, height: 110 },
+    pins: {
+      'VCC': { id: 'VCC', name: 'VCC (5V)', type: PinType.POWER_VCC, description: '5V Power Supply Input', nominalVoltage: 5.0, offset: { x: 0, y: 35 } },
+      'TRIG': { id: 'TRIG', name: 'TRIG', type: PinType.DIGITAL_INPUT, description: 'Ultrasonic Trigger Input (10µs pulse)', offset: { x: 0, y: 60 } },
+      'ECHO': { id: 'ECHO', name: 'ECHO', type: PinType.DIGITAL_OUTPUT, description: 'Ultrasonic Echo Output Pulse', offset: { x: 0, y: 85 } },
+      'GND': { id: 'GND', name: 'GND', type: PinType.GROUND, description: 'System Ground (0V)', nominalVoltage: 0, offset: { x: 170, y: 60 } },
+    },
+  };
+}

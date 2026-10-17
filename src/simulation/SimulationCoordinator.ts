@@ -2,11 +2,10 @@ import { CircuitEngine } from '../circuit/CircuitEngine';
 import { TB6612FNGDriver, TB6612State } from '../circuit/TB6612FNGDriver';
 import { N20MotorModel } from '../robot/MotorModel';
 import { DifferentialDriveChassis, RobotPose } from '../robot/DifferentialDriveChassis';
-import { FirmwareRuntime } from '../runtime/FirmwareRuntime';
 import { ESP32BehavioralRuntime } from '../runtime/ESP32BehavioralRuntime';
-import { WireConnection } from '../circuit/types';
-import { ProjectDocument, validateProjectDocument } from '../project/types';
+import { ProjectDocument } from '../project/types';
 import { createDefaultProject } from '../project/defaultProject';
+import { MultiLayerDiagnosticSnapshot, SimulationDiagnosticsCollector } from './Diagnostics';
 
 export class SimulationCoordinator {
   public circuit: CircuitEngine;
@@ -14,13 +13,15 @@ export class SimulationCoordinator {
   public leftMotor: N20MotorModel;
   public rightMotor: N20MotorModel;
   public chassis: DifferentialDriveChassis;
-  public runtime: FirmwareRuntime;
+  public runtime: ESP32BehavioralRuntime;
+  public diagnostics: SimulationDiagnosticsCollector;
 
   private isRunning = false;
   private isPaused = false;
   private lastTimeSeconds = 0;
   private onStateChangeCallbacks: Array<() => void> = [];
   private onSerialLogCallbacks: Array<(text: string) => void> = [];
+  private latestSnapshot?: MultiLayerDiagnosticSnapshot;
 
   constructor() {
     this.circuit = new CircuitEngine();
@@ -29,6 +30,7 @@ export class SimulationCoordinator {
     this.rightMotor = new N20MotorModel();
     this.chassis = new DifferentialDriveChassis();
     this.runtime = new ESP32BehavioralRuntime();
+    this.diagnostics = new SimulationDiagnosticsCollector();
 
     this.loadProject(createDefaultProject());
     this.setupRuntimeBridges();
@@ -68,7 +70,6 @@ export class SimulationCoordinator {
   private setupRuntimeBridges() {
     this.runtime.setEvents({
       onPinStateChange: (pin: number, state: 0 | 1) => {
-        // Dynamically resolve pin ID on ESP32
         const pinId = `GPIO${pin}`;
         this.circuit.setPinOutput('esp32_1', pinId, {
           digital: state,
@@ -87,6 +88,11 @@ export class SimulationCoordinator {
       onSerialOutput: (text: string) => {
         for (const cb of this.onSerialLogCallbacks) cb(text);
       },
+    });
+
+    this.runtime.setPinInputReader((pin: number) => {
+      const pinId = `GPIO${pin}`;
+      return this.circuit.readNetSignal('esp32_1', pinId).digital;
     });
   }
 
@@ -143,14 +149,19 @@ export class SimulationCoordinator {
     return this.isPaused;
   }
 
+  public getLatestDiagnostics(): MultiLayerDiagnosticSnapshot | undefined {
+    return this.latestSnapshot;
+  }
+
   /**
-   * Main simulation step (called in requestAnimationFrame)
+   * Main simulation step (called in requestAnimationFrame or deterministically in tests)
    */
   public tick(currentTimeSeconds?: number): {
     driverState: TB6612State;
     leftRPM: number;
     rightRPM: number;
     pose: RobotPose;
+    diagnostics: MultiLayerDiagnosticSnapshot;
   } {
     const now = currentTimeSeconds ?? performance.now() / 1000;
     const dt = Math.min(0.1, this.lastTimeSeconds ? now - this.lastTimeSeconds : 0.016);
@@ -167,17 +178,30 @@ export class SimulationCoordinator {
     const effectiveTargetA = this.isPaused ? 0 : driverState.channelA.targetRPM;
     const effectiveTargetB = this.isPaused ? 0 : driverState.channelB.targetRPM;
 
-    const leftRes = this.leftMotor.update(effectiveTargetA, dt);
-    const rightRes = this.rightMotor.update(effectiveTargetB, dt);
+    const leftRes = this.leftMotor.update(effectiveTargetA, dt, driverState.channelA.diagnostic);
+    const rightRes = this.rightMotor.update(effectiveTargetB, dt, driverState.channelB.diagnostic);
 
     // 3. Update Robot Kinematics
     const pose = this.chassis.update(leftRes.linearVelocity, rightRes.linearVelocity, dt);
+
+    // 4. Capture multi-layer diagnostic snapshot
+    const snapshot = this.diagnostics.captureSnapshot(
+      this.runtime,
+      this.circuit,
+      this.driver,
+      driverState,
+      this.leftMotor,
+      this.rightMotor,
+      this.chassis
+    );
+    this.latestSnapshot = snapshot;
 
     return {
       driverState,
       leftRPM: leftRes.currentRPM,
       rightRPM: rightRes.currentRPM,
       pose,
+      diagnostics: snapshot,
     };
   }
 }

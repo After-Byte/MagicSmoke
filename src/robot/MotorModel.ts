@@ -6,8 +6,10 @@ export interface N20MotorConfig {
 }
 
 export class N20MotorModel {
+  private targetRPM = 0;
   private currentRPM = 0;
   private currentAngleRad = 0; // Cumulative wheel rotation
+  private stopReason?: string;
   private config: N20MotorConfig;
 
   constructor(config: Partial<N20MotorConfig> = {}) {
@@ -20,9 +22,16 @@ export class N20MotorModel {
   }
 
   /**
-   * Update motor speed given a target RPM and elapsed time dt (in seconds)
+   * Update motor speed given a target RPM, elapsed time dt (in seconds), and optional stop reason
    */
-  public update(targetRPM: number, dt: number): { currentRPM: number; angleRad: number; linearVelocity: number } {
+  public update(
+    targetRPM: number,
+    dt: number,
+    reason?: string
+  ): { currentRPM: number; angleRad: number; linearVelocity: number; stopReason?: string } {
+    this.targetRPM = targetRPM;
+    this.stopReason = targetRPM === 0 ? reason : undefined;
+
     const error = targetRPM - this.currentRPM;
 
     if (error !== 0) {
@@ -48,12 +57,19 @@ export class N20MotorModel {
       currentRPM: this.currentRPM,
       angleRad: this.currentAngleRad,
       linearVelocity,
+      stopReason: this.stopReason,
     };
   }
 
   public reset() {
+    this.targetRPM = 0;
     this.currentRPM = 0;
     this.currentAngleRad = 0;
+    this.stopReason = undefined;
+  }
+
+  public getTargetRPM(): number {
+    return this.targetRPM;
   }
 
   public getRPM(): number {
@@ -62,5 +78,9 @@ export class N20MotorModel {
 
   public getAngle(): number {
     return this.currentAngleRad;
+  }
+
+  public getStopReason(): string | undefined {
+    return this.stopReason;
   }
 }

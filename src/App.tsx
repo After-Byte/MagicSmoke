@@ -5,7 +5,18 @@ import { CodeEditor } from './editor/CodeEditor';
 import { CircuitCanvas } from './circuit/CircuitCanvas';
 import { ConsolePanel } from './console/ConsolePanel';
 import { DEFAULT_SKETCH, createDefaultProject } from './project/defaultProject';
-import { validateProjectDocument } from './project/types';
+import { ProjectDocument, validateProjectDocument } from './project/types';
+import { ComponentInstance, WireConnection } from './circuit/types';
+import { MultiLayerDiagnosticSnapshot } from './simulation/Diagnostics';
+import { Dashboard } from './dashboard/Dashboard';
+import {
+  StoredProject,
+  getAllStoredProjects,
+  saveStoredProject,
+  getActiveProjectId,
+  setActiveProjectId,
+  createStarter2WDRobot,
+} from './project/projectStorage';
 import {
   Play,
   Pause,
@@ -20,6 +31,10 @@ import {
   Layers,
   Box,
   FileCode,
+  Home,
+  Save,
+  Check,
+  AlertTriangle,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -27,8 +42,43 @@ export const App: React.FC = () => {
   const viewportRef = useRef<Robot3DViewport | null>(null);
   const viewportContainerRef = useRef<HTMLDivElement>(null);
 
+  // Active View State: 'dashboard' vs 'editor'
+  const [currentView, setCurrentView] = useState<'dashboard' | 'editor'>(() => {
+    if (typeof window !== 'undefined') {
+      if (window.location.hash === '#editor' || window.location.search.includes('view=editor')) {
+        return 'editor';
+      }
+      const saved = localStorage.getItem('magicsmoke_active_view');
+      return saved === 'editor' ? 'editor' : 'dashboard';
+    }
+    return 'dashboard';
+  });
+
+  const [activeProject, setActiveProject] = useState<StoredProject | null>(() => {
+    const activeId = getActiveProjectId();
+    const all = getAllStoredProjects();
+    if (activeId) {
+      const found = all.find((p) => p.id === activeId);
+      if (found) return found;
+    }
+    return all[0] || createStarter2WDRobot();
+  });
+
   // Project state
-  const [code, setCode] = useState<string>(DEFAULT_SKETCH);
+  const [code, setCode] = useState<string>(() => {
+    const activeId = getActiveProjectId();
+    const all = getAllStoredProjects();
+    if (activeId) {
+      const found = all.find((p) => p.id === activeId);
+      if (found) return found.document.code;
+    }
+    return (all[0]?.document.code) || DEFAULT_SKETCH;
+  });
+
+  const [isDirty, setIsDirty] = useState<boolean>(false);
+  const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
+  const [saveToast, setSaveToast] = useState<boolean>(false);
+
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
@@ -37,6 +87,7 @@ export const App: React.FC = () => {
   const [serialLogs, setSerialLogs] = useState<string[]>([]);
   const [compileErrors, setCompileErrors] = useState<string[]>([]);
   const [circuitWarnings, setCircuitWarnings] = useState<string[]>([]);
+  const [diagnosticsSnapshot, setDiagnosticsSnapshot] = useState<MultiLayerDiagnosticSnapshot | undefined>(undefined);
 
   // Workspace layout preferences
   // 3D Viewport closed by default per Phase 2 requirements!
@@ -105,6 +156,9 @@ export const App: React.FC = () => {
   // Initialize simulation coordinator
   useEffect(() => {
     const coord = new SimulationCoordinator();
+    if (activeProject) {
+      coord.loadProject(activeProject.document);
+    }
     coordinatorRef.current = coord;
 
     coord.onSerial((text) => {
@@ -117,7 +171,7 @@ export const App: React.FC = () => {
       if (coordinatorRef.current) {
         const sim = coordinatorRef.current.tick();
 
-        if (viewportRef.current) {
+        if (viewportRef.current && viewportRef.current.isAttached()) {
           viewportRef.current.updateRobot(
             sim.pose,
             coordinatorRef.current.leftMotor.getAngle(),
@@ -135,6 +189,8 @@ export const App: React.FC = () => {
           voltageB: Number(sim.driverState.channelB.terminalVoltage.toFixed(1)),
         });
 
+        setDiagnosticsSnapshot(sim.diagnostics);
+
         const evalRes = coordinatorRef.current.circuit.evaluateCircuit();
         setCircuitWarnings(evalRes.circuitWarnings);
       }
@@ -144,18 +200,37 @@ export const App: React.FC = () => {
 
     return () => {
       cancelAnimationFrame(animId);
-      viewportRef.current?.destroy();
+      if (viewportRef.current) {
+        viewportRef.current.destroy();
+        viewportRef.current = null;
+      }
     };
   }, []);
 
   // Mount/Resize 3D Viewport when drawer opens or resizes
   useEffect(() => {
-    if (isDrawerOpen || (isNarrowScreen && mobileTab === 'viewport')) {
-      if (!viewportRef.current && viewportContainerRef.current) {
+    const isVisible = isDrawerOpen || (isNarrowScreen && mobileTab === 'viewport');
+    if (isVisible && viewportContainerRef.current) {
+      if (!viewportRef.current || !viewportRef.current.isAttached()) {
+        if (viewportRef.current) {
+          viewportRef.current.destroy();
+          viewportRef.current = null;
+        }
         viewportRef.current = new Robot3DViewport(viewportContainerRef.current);
-      } else if (viewportRef.current) {
+      } else {
         viewportRef.current.handleResize();
       }
+
+      // Smooth handling across the 300ms CSS drawer width transition
+      const t1 = setTimeout(() => viewportRef.current?.handleResize(), 60);
+      const t2 = setTimeout(() => viewportRef.current?.handleResize(), 160);
+      const t3 = setTimeout(() => viewportRef.current?.handleResize(), 320);
+
+      return () => {
+        clearTimeout(t1);
+        clearTimeout(t2);
+        clearTimeout(t3);
+      };
     }
   }, [isDrawerOpen, drawerWidth, isNarrowScreen, mobileTab]);
 
@@ -233,7 +308,13 @@ export const App: React.FC = () => {
 
   const handleReset = () => {
     coordinatorRef.current?.reset();
-    viewportRef.current?.resetCamera();
+    if (viewportRef.current) {
+      viewportRef.current.resetCamera();
+      if (coordinatorRef.current) {
+        viewportRef.current.updateRobot(coordinatorRef.current.chassis.getPose(), 0, 0);
+        viewportRef.current.render();
+      }
+    }
     setIsRunning(false);
     setIsPaused(false);
   };
@@ -244,16 +325,67 @@ export const App: React.FC = () => {
     localStorage.setItem('magicsmoke_drawer_open', String(next));
   };
 
+  const handleOpenProject = (project: StoredProject) => {
+    setActiveProject(project);
+    setActiveProjectId(project.id);
+    setCode(project.document.code);
+    if (coordinatorRef.current) {
+      coordinatorRef.current.loadProject(project.document);
+      const evalRes = coordinatorRef.current.circuit.evaluateCircuit();
+      setCircuitWarnings(evalRes.circuitWarnings);
+    }
+    setIsDirty(false);
+    setCurrentView('editor');
+    localStorage.setItem('magicsmoke_active_view', 'editor');
+  };
+
+  const handleSaveProject = () => {
+    if (!coordinatorRef.current || !activeProject) return;
+    const currentDoc: ProjectDocument = {
+      ...activeProject.document,
+      name: activeProject.name,
+      code,
+      components: coordinatorRef.current.circuit.getAllComponents(),
+      wires: coordinatorRef.current.circuit.getAllWires(),
+    };
+
+    const updated = saveStoredProject(currentDoc, activeProject.id);
+    setActiveProject(updated);
+    setIsDirty(false);
+    setSaveToast(true);
+    setTimeout(() => setSaveToast(false), 2000);
+  };
+
+  const handleNavigateToDashboard = () => {
+    if (isDirty) {
+      setShowExitConfirm(true);
+    } else {
+      setCurrentView('dashboard');
+      localStorage.setItem('magicsmoke_active_view', 'dashboard');
+    }
+  };
+
+  const handleCodeChange = (newCode: string) => {
+    setCode(newCode);
+    setIsDirty(true);
+  };
+
   const handleWiresChange = () => {
+    setIsDirty(true);
     if (coordinatorRef.current) {
       const evalRes = coordinatorRef.current.circuit.evaluateCircuit();
       setCircuitWarnings(evalRes.circuitWarnings);
     }
   };
 
+  const handleComponentsChange = () => {
+    setIsDirty(true);
+  };
+
   const handleExportJSON = () => {
     if (!coordinatorRef.current) return;
     const project = coordinatorRef.current.exportProject(code);
+    if (activeProject) project.name = activeProject.name;
     const blob = new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -275,9 +407,8 @@ export const App: React.FC = () => {
           alert(`Invalid project format:\n${val.errors.join('\n')}`);
           return;
         }
-        setCode(data.code);
-        coordinatorRef.current!.loadProject(data);
-        handleWiresChange();
+        const imported = saveStoredProject(data);
+        handleOpenProject(imported);
       } catch (err) {
         alert('Could not parse project JSON.');
       }
@@ -287,28 +418,77 @@ export const App: React.FC = () => {
 
   const telemetrySummary = `${telemetry.leftRPM} RPM / ${telemetry.rightRPM} RPM | Mode: ${telemetry.modeA}`;
 
+  if (currentView === 'dashboard') {
+    return (
+      <Dashboard
+        onOpenProject={handleOpenProject}
+        hasActiveSession={Boolean(activeProject)}
+        onReturnToEditor={() => {
+          setCurrentView('editor');
+          localStorage.setItem('magicsmoke_active_view', 'editor');
+        }}
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col w-screen h-screen bg-[#080b10] text-[#e2e8f0] font-sans overflow-hidden select-none">
       {/* Top Engineering Toolbar */}
       <header className="flex items-center justify-between px-3.5 py-1.5 bg-[#0e1219] border-b border-[#1b2230] z-40 select-none">
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={handleNavigateToDashboard}
+            className="flex items-center gap-1.5 px-2 py-1 rounded bg-[#131924] hover:bg-[#1c2434] text-[#38bdf8] hover:text-white border border-[#212c40] text-xs font-mono transition-all mr-0.5"
+            title="Return to Projects Dashboard"
+            data-testid="back-to-dashboard-btn"
+          >
+            <Home size={13} />
+            <span className="hidden sm:inline">Dashboard</span>
+          </button>
+
+          <div className="flex items-center gap-1.5">
             <span className="text-[#00f0ff] font-extrabold tracking-wider text-sm font-mono">MAGICSMOKE</span>
             <span className="text-[10px] bg-[#16202e] text-[#38bdf8] px-1.5 py-0.5 rounded font-mono border border-[#1e293b]">
-              v1.0
+              v1.21
             </span>
           </div>
 
           <div className="h-4 w-px bg-[#263143] mx-0.5 hidden sm:block" />
 
-          <div className="hidden sm:flex items-center gap-1.5 text-xs text-[#94a3b8] font-mono">
-            <Cpu size={13} className="text-[#10b981]" />
-            <span className="text-[11px]">ESP32 DevKit V1 (TB6612FNG 2WD)</span>
+          {/* Active Project Title with dirty indicator */}
+          <div className="flex items-center gap-1.5 text-xs text-[#cbd5e1] font-mono">
+            <span className="font-semibold max-w-[170px] truncate" title={activeProject?.name}>
+              {activeProject?.name || 'Untitled Circuit'}
+            </span>
+            {isDirty && (
+              <span className="text-[10px] text-amber-400 font-mono italic" title="You have unsaved changes">
+                • unsaved
+              </span>
+            )}
           </div>
         </div>
 
         {/* Runtime Lifecycle Controls */}
         <div className="flex items-center gap-2">
+          {/* Save Button */}
+          <button
+            onClick={handleSaveProject}
+            className={`flex items-center gap-1 px-2.5 py-1 rounded text-xs font-mono border transition-all ${
+              saveToast
+                ? 'bg-emerald-950 text-emerald-300 border-emerald-700'
+                : isDirty
+                ? 'bg-[#00f0ff]/15 hover:bg-[#00f0ff]/25 text-[#00f0ff] border-[#00f0ff]/50 font-bold animate-pulse'
+                : 'bg-[#12161f] hover:bg-[#1a212e] text-[#94a3b8] hover:text-[#e2e8f0] border-[#212b3a]'
+            }`}
+            title="Save circuit and sketch changes"
+            data-testid="save-project-btn"
+          >
+            {saveToast ? <Check size={12} className="text-emerald-400" /> : <Save size={12} />}
+            <span>{saveToast ? 'Saved!' : 'Save'}</span>
+          </button>
+
+          <div className="h-4 w-px bg-[#263143] mx-0.5 hidden md:block" />
+
           {!isRunning ? (
             <button
               onClick={handleCompileAndRun}
@@ -349,7 +529,7 @@ export const App: React.FC = () => {
 
           <div className="h-4 w-px bg-[#263143] mx-1 hidden md:block" />
 
-          {/* Project Persistence */}
+          {/* Project Export/Import */}
           <button
             onClick={handleExportJSON}
             className="hidden md:flex items-center gap-1 px-2 py-1 rounded bg-[#12161f] hover:bg-[#1a212e] text-[#94a3b8] hover:text-[#e2e8f0] text-xs font-mono border border-[#212b3a]"
@@ -460,7 +640,7 @@ export const App: React.FC = () => {
                 <span className="text-[10px] text-[#64748b]">Arduino C++ (ESP32)</span>
               </div>
               <div className="flex-1 overflow-hidden">
-                <CodeEditor value={code} onChange={setCode} />
+                <CodeEditor value={code} onChange={handleCodeChange} />
               </div>
             </div>
 
@@ -487,6 +667,7 @@ export const App: React.FC = () => {
                   <CircuitCanvas
                     circuit={coordinatorRef.current.circuit}
                     onWiresChange={handleWiresChange}
+                    onComponentsChange={handleComponentsChange}
                   />
                 )}
               </div>
@@ -497,7 +678,7 @@ export const App: React.FC = () => {
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             {mobileTab === 'editor' && (
               <div className="flex-1 flex flex-col h-full overflow-hidden">
-                <CodeEditor value={code} onChange={setCode} />
+                <CodeEditor value={code} onChange={handleCodeChange} />
               </div>
             )}
             {mobileTab === 'circuit' && (
@@ -506,6 +687,7 @@ export const App: React.FC = () => {
                   <CircuitCanvas
                     circuit={coordinatorRef.current.circuit}
                     onWiresChange={handleWiresChange}
+                    onComponentsChange={handleComponentsChange}
                   />
                 )}
               </div>
@@ -621,8 +803,61 @@ export const App: React.FC = () => {
           onToggleCollapse={() => setIsConsoleCollapsed(!isConsoleCollapsed)}
           onClear={() => setSerialLogs([])}
           telemetrySummary={telemetrySummary}
+          diagnostics={diagnosticsSnapshot}
         />
       </div>
+
+      {/* Unsaved Changes Confirmation Modal */}
+      {showExitConfirm && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0e1420] border border-[#24334a] rounded-xl max-w-sm w-full p-5 shadow-2xl space-y-4">
+            <div className="flex items-center gap-3 text-amber-400">
+              <div className="w-9 h-9 rounded-full bg-amber-950/60 border border-amber-800/60 flex items-center justify-center shrink-0">
+                <AlertTriangle size={18} />
+              </div>
+              <h3 className="font-bold text-sm text-[#f1f5f9] font-mono">Unsaved Changes</h3>
+            </div>
+
+            <p className="text-xs text-[#94a3b8] leading-relaxed font-mono">
+              You have unsaved changes to this circuit or sketch. Would you like to save your work before returning to the dashboard?
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-2 pt-2 border-t border-[#1c2738] font-mono text-xs">
+              <button
+                onClick={() => setShowExitConfirm(false)}
+                className="w-full sm:w-auto px-3 py-1.5 rounded bg-[#172030] hover:bg-[#202c42] text-[#cbd5e1] transition-colors"
+                data-testid="keep-editing-btn"
+              >
+                Keep Editing
+              </button>
+              <button
+                onClick={() => {
+                  setIsDirty(false);
+                  setShowExitConfirm(false);
+                  setCurrentView('dashboard');
+                  localStorage.setItem('magicsmoke_active_view', 'dashboard');
+                }}
+                className="w-full sm:w-auto px-3 py-1.5 rounded bg-[#1e293b] hover:bg-rose-950/40 text-rose-300 hover:text-rose-200 border border-rose-800/40 transition-colors"
+                data-testid="discard-and-exit-btn"
+              >
+                Discard & Return
+              </button>
+              <button
+                onClick={() => {
+                  handleSaveProject();
+                  setShowExitConfirm(false);
+                  setCurrentView('dashboard');
+                  localStorage.setItem('magicsmoke_active_view', 'dashboard');
+                }}
+                className="w-full sm:w-auto px-3 py-1.5 rounded bg-[#00f0ff] hover:bg-[#38bdf8] text-[#070a10] font-bold transition-all"
+                data-testid="save-and-exit-btn"
+              >
+                Save & Return
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { CircuitEngine } from './CircuitEngine';
 import { ComponentInstance, WireConnection, PinDefinition, PinType } from './types';
-import { Trash2, Cpu, Zap, Battery, Disc, ZoomIn, ZoomOut, Maximize2, Move, AlertCircle } from 'lucide-react';
+import { Trash2, Cpu, Zap, Battery, Disc, ZoomIn, ZoomOut, Maximize2, Move, AlertCircle, Palette } from 'lucide-react';
+import { ComponentPalette } from './ComponentPalette';
+import { CatalogItem } from './ComponentCatalog';
 
 interface CircuitCanvasProps {
   circuit: CircuitEngine;
   onWiresChange: (wires: WireConnection[]) => void;
   onComponentMove?: (id: string, x: number, y: number) => void;
+  onComponentsChange?: (components: ComponentInstance[]) => void;
 }
 
 interface DragConnectingState {
@@ -40,10 +43,17 @@ function computeWireBezier(from: { x: number; y: number }, to: { x: number; y: n
   return `M ${from.x} ${from.y} C ${cp1x} ${from.y}, ${cp2x} ${to.y}, ${to.x} ${to.y}`;
 }
 
-export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({ circuit, onWiresChange, onComponentMove }) => {
+export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
+  circuit,
+  onWiresChange,
+  onComponentMove,
+  onComponentsChange,
+}) => {
   const [components, setComponents] = useState<ComponentInstance[]>([]);
   const [wires, setWires] = useState<WireConnection[]>([]);
   const [selectedWireId, setSelectedWireId] = useState<string | null>(null);
+  const [selectedComponentId, setSelectedComponentId] = useState<string | null>(null);
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
 
   // Pan & Zoom state
   const [scale, setScale] = useState<number>(1.0);
@@ -123,7 +133,50 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({ circuit, onWiresCh
     e.stopPropagation();
     console.log('[CIRCUIT] Selected wire:', wireId);
     setSelectedWireId(wireId);
+    setSelectedComponentId(null);
   }, []);
+
+  const handleAddComponent = useCallback(
+    (item: CatalogItem) => {
+      const existing = circuit.getAllComponents();
+      const count = existing.length;
+      const targetX = Math.round(180 + (count % 4) * 60);
+      const targetY = Math.round(100 + (count % 3) * 75);
+      const compId = `${item.type.toLowerCase().replace(/[^a-z0-9]/g, '_')}_${Date.now().toString(36).substring(2, 6)}`;
+      const instance = item.instantiate(compId, { x: targetX, y: targetY });
+
+      circuit.addComponent(instance);
+      refreshState();
+      if (onComponentsChange) onComponentsChange(circuit.getAllComponents());
+      onWiresChange(circuit.getAllWires());
+    },
+    [circuit, onComponentsChange, onWiresChange, refreshState]
+  );
+
+  const handleDeleteComponent = useCallback(
+    (compId: string) => {
+      circuit.removeComponent(compId);
+      if (selectedComponentId === compId) {
+        setSelectedComponentId(null);
+      }
+      refreshState();
+      if (onComponentsChange) onComponentsChange(circuit.getAllComponents());
+      onWiresChange(circuit.getAllWires());
+    },
+    [circuit, onComponentsChange, onWiresChange, refreshState, selectedComponentId]
+  );
+
+  const handleChangeWireColor = useCallback(
+    (wireId: string, newColor: string) => {
+      const wire = circuit.getWire(wireId);
+      if (wire) {
+        wire.color = newColor;
+        refreshState();
+        onWiresChange(circuit.getAllWires());
+      }
+    },
+    [circuit, onWiresChange, refreshState]
+  );
 
   // Global Keyboard Handlers: Delete, Backspace, Escape
   useEffect(() => {
@@ -377,11 +430,16 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({ circuit, onWiresCh
       <div
         onMouseDown={(e) => e.stopPropagation()}
         onPointerDown={(e) => e.stopPropagation()}
-        className="absolute top-2 left-2 z-30 flex items-center gap-1.5 bg-[#121722]/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#222e42] text-xs font-mono shadow-xl"
+        className="absolute top-2 left-2 z-30 flex items-center gap-1.5 bg-[#121722]/95 backdrop-blur-md px-3 py-1.5 rounded-lg border border-[#222e42] text-xs font-mono shadow-xl flex-wrap max-w-[calc(100%-80px)]"
       >
         <span className="text-[#94a3b8] font-medium">Wires:</span>
         <span className="text-[#00f0ff] font-bold" data-testid="wire-count">
           {wires.length}
+        </span>
+
+        <span className="text-[#94a3b8] font-medium ml-1">Parts:</span>
+        <span className="text-[#38bdf8] font-bold" data-testid="component-count">
+          {components.length}
         </span>
 
         <div className="h-3.5 w-px bg-[#26354a] mx-1" />
@@ -411,13 +469,48 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({ circuit, onWiresCh
         {selectedWireId && (
           <>
             <div className="h-3.5 w-px bg-[#26354a] mx-1" />
+            <span className="text-[#94a3b8] text-[10px] hidden sm:inline">Color:</span>
+            <div className="flex items-center gap-1" data-testid="wire-color-picker">
+              {[
+                { color: '#ef4444', title: 'Red (Power)' },
+                { color: '#64748b', title: 'Slate (Ground)' },
+                { color: '#06b6d4', title: 'Cyan (3.3V Logic)' },
+                { color: '#f59e0b', title: 'Amber (Battery VM)' },
+                { color: '#10b981', title: 'Green (STBY)' },
+                { color: '#3b82f6', title: 'Blue (Signals)' },
+                { color: '#a855f7', title: 'Purple (PWM)' },
+              ].map((c) => (
+                <button
+                  key={c.color}
+                  onClick={() => handleChangeWireColor(selectedWireId, c.color)}
+                  className="w-3.5 h-3.5 rounded-full border border-black/50 hover:scale-125 transition-transform cursor-pointer"
+                  style={{ backgroundColor: c.color }}
+                  title={c.title}
+                  data-testid={`wire-color-${c.color.replace('#', '')}`}
+                />
+              ))}
+            </div>
             <button
               onClick={() => handleDeleteWire(selectedWireId)}
-              className="flex items-center gap-1 text-rose-400 hover:text-white bg-rose-950/60 hover:bg-rose-600 px-2.5 py-0.5 rounded border border-rose-800 transition-all font-semibold cursor-pointer shadow-sm"
+              className="flex items-center gap-1 text-rose-400 hover:text-white bg-rose-950/60 hover:bg-rose-600 px-2.5 py-0.5 rounded border border-rose-800 transition-all font-semibold cursor-pointer shadow-sm ml-1"
               title="Delete selected wire (or press Delete/Backspace)"
               data-testid="delete-wire-btn"
             >
               <Trash2 size={12} /> Delete Wire
+            </button>
+          </>
+        )}
+
+        {selectedComponentId && !selectedWireId && (
+          <>
+            <div className="h-3.5 w-px bg-[#26354a] mx-1" />
+            <button
+              onClick={() => handleDeleteComponent(selectedComponentId)}
+              className="flex items-center gap-1 text-rose-400 hover:text-white bg-rose-950/60 hover:bg-rose-600 px-2.5 py-0.5 rounded border border-rose-800 transition-all font-semibold cursor-pointer shadow-sm"
+              title="Delete selected component"
+              data-testid="delete-component-btn"
+            >
+              <Trash2 size={12} /> Delete Component
             </button>
           </>
         )}
@@ -744,6 +837,52 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({ circuit, onWiresCh
                   </g>
                 )}
 
+                {comp.type === 'GROUND_BUS' && (
+                  <g pointerEvents="none">
+                    <rect
+                      x="0"
+                      y="26"
+                      width={width}
+                      height={height - 26}
+                      rx="4"
+                      fill="#1e293b"
+                      stroke="#334155"
+                      strokeWidth="1.2"
+                    />
+                    <rect x="10" y="32" width={width - 20} height="16" rx="2" fill="#0f172a" stroke="#475569" strokeWidth="0.8" />
+                    <text x={width / 2} y="44" textAnchor="middle" fill="#94a3b8" fontSize="8" fontFamily="monospace" fontWeight="700">
+                      COMMON GND BUS
+                    </text>
+                  </g>
+                )}
+
+                {comp.type === 'HC_SR04' && (
+                  <g pointerEvents="none">
+                    <rect
+                      x="0"
+                      y="26"
+                      width={width}
+                      height={height - 26}
+                      rx="4"
+                      fill="#1e3a8a"
+                      stroke="#2563eb"
+                      strokeWidth="1.2"
+                    />
+                    {/* Dual Ultrasonic Transducers */}
+                    <circle cx={44} cy={62} r="18" fill="#94a3b8" stroke="#cbd5e1" strokeWidth="2" />
+                    <circle cx={44} cy={62} r="14" fill="#0f172a" />
+                    <text x={44} y={66} textAnchor="middle" fill="#e2e8f0" fontSize="9" fontFamily="monospace" fontWeight="700">T</text>
+
+                    <circle cx={width - 44} cy={62} r="18" fill="#94a3b8" stroke="#cbd5e1" strokeWidth="2" />
+                    <circle cx={width - 44} cy={62} r="14" fill="#0f172a" />
+                    <text x={width - 44} y={66} textAnchor="middle" fill="#e2e8f0" fontSize="9" fontFamily="monospace" fontWeight="700">R</text>
+
+                    <text x={width / 2} y={96} textAnchor="middle" fill="#93c5fd" fontSize="7.5" fontFamily="monospace">
+                      HC-SR04 40kHz
+                    </text>
+                  </g>
+                )}
+
                 {/* Interactive Pins */}
                 {Object.values(comp.pins).map((pin: PinDefinition) => {
                   const isLeft = pin.offset.x === 0;
@@ -868,6 +1007,13 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({ circuit, onWiresCh
           })}
         </g>
       </svg>
+
+      {/* Component Library Palette Drawer */}
+      <ComponentPalette
+        isOpen={isPaletteOpen}
+        onToggle={() => setIsPaletteOpen(!isPaletteOpen)}
+        onAddComponent={handleAddComponent}
+      />
     </div>
   );
 };

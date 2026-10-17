@@ -1,6 +1,23 @@
 import React, { useEffect, useRef } from 'react';
 import * as monaco from 'monaco-editor';
 
+if (typeof window !== 'undefined' && !(window as any).MonacoEnvironment) {
+  (window as any).MonacoEnvironment = {
+    getWorker: () => {
+      // Inline dummy worker for basic editor syntax features without requiring separate worker bundle
+      const blob = new Blob(
+        [
+          `self.onmessage = function() {
+            // Monaco web worker message handler stub
+          };`
+        ],
+        { type: 'application/javascript' }
+      );
+      return new Worker(URL.createObjectURL(blob));
+    },
+  };
+}
+
 interface CodeEditorProps {
   value: string;
   onChange: (value: string) => void;

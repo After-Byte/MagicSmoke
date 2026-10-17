@@ -7,10 +7,10 @@ export class Robot3DViewport {
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
   private robotGroup: THREE.Group;
-  private leftFrontWheel!: THREE.Mesh;
-  private leftRearWheel!: THREE.Mesh;
-  private rightFrontWheel!: THREE.Mesh;
-  private rightRearWheel!: THREE.Mesh;
+  private leftFrontWheel!: THREE.Group;
+  private leftRearWheel!: THREE.Group;
+  private rightFrontWheel!: THREE.Group;
+  private rightRearWheel!: THREE.Group;
 
   private isDragging = false;
   private previousMousePosition = { x: 0, y: 0 };
@@ -21,8 +21,9 @@ export class Robot3DViewport {
 
   constructor(container: HTMLElement) {
     this.container = container;
-    const width = Math.max(container.clientWidth || 320, 100);
-    const height = Math.max(container.clientHeight || 240, 100);
+    const rect = container.getBoundingClientRect();
+    const width = Math.max(rect.width || container.clientWidth || 320, 100);
+    const height = Math.max(rect.height || container.clientHeight || 240, 100);
 
     // 1. Scene
     this.scene = new THREE.Scene();
@@ -33,19 +34,28 @@ export class Robot3DViewport {
     this.updateCameraPosition();
 
     // 3. Renderer with antialiasing and PCF soft shadows
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
-    this.renderer.setSize(width, height);
+    this.renderer = new THREE.WebGLRenderer({
+      antialias: true,
+      alpha: false,
+      preserveDrawingBuffer: true,
+      powerPreference: 'high-performance',
+    });
+    this.renderer.setSize(width, height, false);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
-    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    this.renderer.shadowMap.type = THREE.PCFShadowMap;
+    this.renderer.domElement.style.display = 'block';
+    this.renderer.domElement.style.width = '100%';
+    this.renderer.domElement.style.height = '100%';
+    this.renderer.domElement.style.outline = 'none';
     this.container.appendChild(this.renderer.domElement);
 
     // 4. Lighting Rig
-    const ambientLight = new THREE.AmbientLight(0xe2e8f0, 0.75);
+    const ambientLight = new THREE.AmbientLight(0xe2e8f0, 1.2);
     this.scene.add(ambientLight);
 
     // Key Light
-    const keyLight = new THREE.DirectionalLight(0xffffff, 1.4);
+    const keyLight = new THREE.DirectionalLight(0xffffff, 2.0);
     keyLight.position.set(2, 4, 3);
     keyLight.castShadow = true;
     keyLight.shadow.mapSize.width = 1024;
@@ -54,19 +64,24 @@ export class Robot3DViewport {
     this.scene.add(keyLight);
 
     // Cyan Fill / Rim Light
-    const fillLight = new THREE.DirectionalLight(0x00f0ff, 0.45);
+    const fillLight = new THREE.DirectionalLight(0x00f0ff, 0.7);
     fillLight.position.set(-3, 2, -2);
     this.scene.add(fillLight);
 
-    // 5. Floor Grid and Plane
-    const grid = new THREE.GridHelper(10, 40, 0x00f0ff, 0x1a2333);
-    grid.position.y = 0;
+    // 5. Floor Grid and Plane (Expansive Engineering Arena)
+    const grid = new THREE.GridHelper(30, 60, 0x00f0ff, 0x1f2b3e);
+    grid.position.y = 0.001;
     this.scene.add(grid);
 
-    const floorGeo = new THREE.PlaneGeometry(10, 10);
-    const floorMat = new THREE.MeshStandardMaterial({ color: 0x0c1017, roughness: 0.9, metalness: 0.1 });
+    const floorGeo = new THREE.PlaneGeometry(30, 30);
+    const floorMat = new THREE.MeshStandardMaterial({
+      color: 0x111622,
+      roughness: 0.8,
+      metalness: 0.2,
+    });
     const floor = new THREE.Mesh(floorGeo, floorMat);
     floor.rotation.x = -Math.PI / 2;
+    floor.position.y = 0;
     floor.receiveShadow = true;
     this.scene.add(floor);
 
@@ -82,6 +97,8 @@ export class Robot3DViewport {
       this.handleResize();
     });
     this.resizeObserver.observe(this.container);
+
+    this.render();
   }
 
   private buildRobotGeometry() {
@@ -301,21 +318,24 @@ export class Robot3DViewport {
       const wheelGroup = new THREE.Group();
       wheelGroup.position.set(x, wheelRadius, z);
 
+      const spinner = new THREE.Group();
+      wheelGroup.add(spinner);
+
       const tire = new THREE.Mesh(tireGeo, tireMat);
       tire.rotation.z = Math.PI / 2;
       tire.castShadow = true;
-      wheelGroup.add(tire);
+      spinner.add(tire);
 
       const hub = new THREE.Mesh(hubGeo, hubMat);
       hub.rotation.z = Math.PI / 2;
-      wheelGroup.add(hub);
+      spinner.add(hub);
 
       const nut = new THREE.Mesh(nutGeo, nutMat);
       nut.rotation.z = Math.PI / 2;
-      wheelGroup.add(nut);
+      spinner.add(nut);
 
       this.robotGroup.add(wheelGroup);
-      return tire;
+      return spinner;
     };
 
     const halfTrack = 0.07;
@@ -336,6 +356,8 @@ export class Robot3DViewport {
     this.leftRearWheel.rotation.x = leftAngleRad;
     this.rightFrontWheel.rotation.x = rightAngleRad;
     this.rightRearWheel.rotation.x = rightAngleRad;
+
+    this.updateCameraPosition();
   }
 
   public render() {
@@ -347,6 +369,7 @@ export class Robot3DViewport {
     this.cameraAzimuth = 0.75;
     this.cameraElevation = 0.45;
     this.updateCameraPosition();
+    this.render();
   }
 
   private updateCameraPosition() {
@@ -380,6 +403,7 @@ export class Robot3DViewport {
       this.cameraElevation = Math.max(0.1, Math.min(Math.PI / 2 - 0.05, this.cameraElevation + deltaY * 0.01));
 
       this.updateCameraPosition();
+      this.render();
       this.previousMousePosition = { x: e.clientX, y: e.clientY };
     });
 
@@ -387,17 +411,28 @@ export class Robot3DViewport {
       e.preventDefault();
       this.cameraDistance = Math.max(0.2, Math.min(4.0, this.cameraDistance + e.deltaY * 0.001));
       this.updateCameraPosition();
+      this.render();
     });
+  }
+
+  public isAttached(): boolean {
+    return Boolean(
+      this.renderer &&
+      this.renderer.domElement &&
+      this.renderer.domElement.parentElement === this.container
+    );
   }
 
   public handleResize() {
     if (!this.container) return;
-    const width = Math.max(this.container.clientWidth || 320, 100);
-    const height = Math.max(this.container.clientHeight || 240, 100);
+    const rect = this.container.getBoundingClientRect();
+    const width = Math.max(rect.width || this.container.clientWidth || 320, 100);
+    const height = Math.max(rect.height || this.container.clientHeight || 240, 100);
 
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height);
+    this.renderer.setSize(width, height, false);
+    this.render();
   }
 
   public destroy() {
