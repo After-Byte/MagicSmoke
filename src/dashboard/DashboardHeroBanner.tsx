@@ -1,152 +1,22 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Play, Cpu, Layers } from 'lucide-react';
+import { Sparkles, ArrowRight, Play, Cpu, Layers, Gauge, CircuitBoard } from 'lucide-react';
 
-interface DashboardHeroBannerProps {
-  onLaunchLineFollowerLab: () => void;
-  onCreateNewCircuit: () => void;
-  onViewSchematic?: () => void;
-}
+interface DashboardHeroBannerProps { onLaunchLineFollowerLab: () => void; onCreateNewCircuit: () => void; onViewSchematic?: () => void }
 
-export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = ({
-  onLaunchLineFollowerLab,
-  onCreateNewCircuit,
-  onViewSchematic,
-}) => {
-  return (
-    <div className="bg-white border border-[#e2e8f0] rounded-2xl overflow-hidden shadow-xs flex flex-col md:flex-row mb-8 select-none">
-      {/* Left Column: Stylized Robotics & Circuit Visual Illustration (~40%) */}
-      <div className="md:w-[42%] bg-gradient-to-br from-[#0c1424] via-[#0d1e38] to-[#081220] relative overflow-hidden flex items-center justify-center min-h-[200px] p-6 text-white">
-        {/* Subtle background tech grid and circuit paths */}
-        <svg
-          className="absolute inset-0 w-full h-full pointer-events-none opacity-40"
-          preserveAspectRatio="none"
-          viewBox="0 0 400 220"
-          fill="none"
-        >
-          {/* Track curve line */}
-          <path
-            d="M 20 180 C 100 80, 160 200, 240 100 S 340 180, 390 60"
-            stroke="#00b8d9"
-            strokeWidth="3.5"
-            strokeDasharray="6 6"
-          />
-          {/* Ground grid lines */}
-          <line x1="0" y1="180" x2="400" y2="180" stroke="#334155" strokeWidth="1" />
-          <line x1="0" y1="200" x2="400" y2="200" stroke="#1e293b" strokeWidth="1" />
-          <line x1="50" y1="160" x2="100" y2="220" stroke="#1e293b" strokeWidth="1" />
-          <line x1="150" y1="160" x2="200" y2="220" stroke="#1e293b" strokeWidth="1" />
-          <line x1="250" y1="160" x2="300" y2="220" stroke="#1e293b" strokeWidth="1" />
-          <line x1="350" y1="160" x2="400" y2="220" stroke="#1e293b" strokeWidth="1" />
-        </svg>
-
-        {/* Foreground 2WD Robot Chassis Illustration */}
-        <div className="relative z-10 flex flex-col items-center">
-          {/* 3D Chassis Representation */}
-          <div className="relative w-44 h-28 flex items-center justify-center">
-            {/* Robot Base Body */}
-            <div className="w-32 h-20 bg-[#162033] rounded-xl border border-[#38bdf8]/40 shadow-[0_0_25px_rgba(56,189,248,0.25)] flex flex-col justify-between p-2 relative">
-              {/* Arduino Uno microcontroller chip */}
-              <div className="flex items-center justify-between text-[8px] font-mono font-bold text-[#38bdf8]">
-                <span>UNO R3</span>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-[0_0_8px_#34d399]" />
-              </div>
-              <div className="w-20 h-5 bg-[#0b101b] rounded border border-[#1e293b] mx-auto flex items-center justify-center text-[7px] font-mono text-[#94a3b8]">
-                ATmega328P
-              </div>
-              {/* TB6612FNG Dual Driver */}
-              <div className="flex justify-between items-center text-[7px] font-mono text-[#cbd5e1] border-t border-[#1e2a3c] pt-1">
-                <span className="text-amber-400 font-semibold">TB6612FNG</span>
-                <span className="text-emerald-400">2S LiPo</span>
-              </div>
-            </div>
-
-            {/* Left Motor Wheel */}
-            <div className="absolute -left-3 top-2 w-4 h-16 bg-[#0a0e17] rounded-md border border-[#475569] shadow-md flex items-center justify-center">
-              <div className="w-2 h-10 bg-[#334155] rounded-xs" />
-            </div>
-
-            {/* Right Motor Wheel */}
-            <div className="absolute -right-3 top-2 w-4 h-16 bg-[#0a0e17] rounded-md border border-[#475569] shadow-md flex items-center justify-center">
-              <div className="w-2 h-10 bg-[#334155] rounded-xs" />
-            </div>
-
-            {/* 8-Channel IR Reflectance Array Bar (Front) */}
-            <div className="absolute -bottom-2 w-28 h-3.5 bg-[#0f172a] rounded-sm border border-[#38bdf8]/60 flex items-center justify-around px-1 shadow-[0_0_12px_rgba(56,189,248,0.4)]">
-              {Array.from({ length: 8 }).map((_, i) => (
-                <div
-                  key={i}
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    i === 3 || i === 4 ? 'bg-red-500 shadow-[0_0_6px_#ef4444]' : 'bg-[#334155]'
-                  }`}
-                />
-              ))}
-            </div>
-          </div>
-
-          {/* Under-chassis telemetry indicator */}
-          <div className="mt-3 flex items-center gap-2 px-3 py-1 rounded-full bg-[#1e293b]/80 border border-[#38bdf8]/30 backdrop-blur-sm text-[11px] font-mono text-[#38bdf8]">
-            <span className="w-2 h-2 rounded-full bg-[#00b8d9] animate-ping" />
-            <span>Closed-Loop PID Control</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Right Column: Copy & Actions (~58%) */}
-      <div className="md:w-[58%] p-6 sm:p-8 flex flex-col justify-center items-start bg-white">
-        {/* Badges */}
-        <div className="flex flex-wrap items-center gap-2 mb-2.5">
-          <span className="flex items-center gap-1 text-[11px] font-mono font-bold text-[#1677ff] bg-[#1677ff]/10 px-2.5 py-0.5 rounded-full border border-[#1677ff]/20 uppercase tracking-wider">
-            <Sparkles size={11} /> Featured Simulation Lab
-          </span>
-          <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-            Closed-Loop Feedback Verified
-          </span>
-        </div>
-
-        {/* Heading */}
-        <h2 className="text-xl sm:text-2xl font-bold text-[#172033] leading-tight mb-2.5 tracking-tight">
-          Autonomous Line Follower Robotics Lab
-        </h2>
-
-        {/* Description */}
-        <p className="text-xs sm:text-[13px] text-[#64748b] leading-relaxed mb-6 max-w-xl">
-          Complete hardware simulation: Arduino Uno R3 running C++ PID firmware, 8-channel optical reflectance sensor array, TB6612FNG dual motor driver, and unicycle differential drive kinematics inside an interactive 3D arena.
-        </p>
-
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={onLaunchLineFollowerLab}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#1677ff] hover:bg-[#0060df] text-white font-bold text-xs font-mono shadow-md hover:shadow-lg transition-all duration-150 cursor-pointer active:scale-95"
-            data-testid="launch-line-follower-lab-btn"
-          >
-            <Play size={14} fill="currentColor" />
-            <span>Launch Line Follower Lab</span>
-            <ArrowRight size={14} />
-          </button>
-
-          {onViewSchematic && (
-            <button
-              onClick={onViewSchematic}
-              className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#475569] hover:text-[#172033] border border-[#e2e8f0] text-xs font-mono transition-colors cursor-pointer"
-              title="Open schematic and wiring directly in Circuit Editor"
-              data-testid="view-schematic-btn"
-            >
-              <Layers size={13} />
-              <span>View Schematic</span>
-            </button>
-          )}
-
-          <button
-            onClick={onCreateNewCircuit}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#f8fafc] hover:bg-[#f1f5f9] text-[#1677ff] border border-[#cbd5e1] text-xs font-mono font-semibold transition-colors cursor-pointer"
-            data-testid="banner-new-circuit-btn"
-          >
-            <Cpu size={13} />
-            <span>+ New Circuit</span>
-          </button>
-        </div>
-      </div>
+export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = ({ onLaunchLineFollowerLab, onCreateNewCircuit, onViewSchematic }) => <section className="mb-10 border border-[#111214] bg-[#b8e0d8] overflow-hidden grid grid-cols-1 lg:grid-cols-[1.02fr_1.2fr] min-h-[280px] shadow-[8px_8px_0_#111214] select-none">
+  <div className="relative overflow-hidden bg-[#111214] p-6 sm:p-8 text-[#f7f7f2] flex flex-col justify-between">
+    <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'linear-gradient(#b8e0d8 1px, transparent 1px), linear-gradient(90deg, #b8e0d8 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+    <div className="relative z-10 flex items-center justify-between"><span className="ms-eyebrow text-[#b8e0d8]">Featured system / 04</span><span className="ms-mono text-[10px] text-[#777d80]">MS–LAB–042</span></div>
+    <div className="relative z-10 py-5 flex items-center justify-center">
+      <svg viewBox="0 0 460 180" className="w-full max-w-[460px] h-auto" fill="none" aria-label="Line follower robot system illustration"><path d="M12 146H450" stroke="#777d80" strokeWidth="1" strokeDasharray="4 7" /><path d="M20 128C82 48 129 145 201 85S328 50 440 112" stroke="#e6321f" strokeWidth="5" /><path d="M20 128C82 48 129 145 201 85S328 50 440 112" stroke="#f7f7f2" strokeWidth="1" strokeDasharray="3 6" /><g transform="translate(186 44)"><rect x="0" y="20" width="100" height="54" rx="4" fill="#b8e0d8" stroke="#f7f7f2" strokeWidth="2" /><rect x="24" y="32" width="52" height="17" fill="#111214" stroke="#777d80" /><text x="50" y="44" textAnchor="middle" fill="#b8e0d8" fontSize="8" fontFamily="monospace">UNO R3</text><circle cx="12" cy="31" r="3" fill="#e6321f" /><circle cx="88" cy="31" r="3" fill="#e6321f" /><rect x="-15" y="29" width="13" height="38" rx="5" fill="#777d80" stroke="#f7f7f2" /><rect x="102" y="29" width="13" height="38" rx="5" fill="#777d80" stroke="#f7f7f2" /><rect x="21" y="76" width="58" height="8" fill="#e6321f" /><circle cx="30" cy="80" r="2" fill="#f7f7f2" /><circle cx="42" cy="80" r="2" fill="#f7f7f2" /><circle cx="54" cy="80" r="2" fill="#f7f7f2" /><circle cx="66" cy="80" r="2" fill="#f7f7f2" /></g><text x="16" y="24" fill="#b8e0d8" fontSize="9" fontFamily="monospace">CLOSED LOOP / ACTIVE</text><text x="350" y="165" fill="#777d80" fontSize="9" fontFamily="monospace">PID 8CH</text></svg>
     </div>
-  );
-};
+    <div className="relative z-10 flex items-center gap-2 text-[11px] ms-mono text-[#b8e0d8]"><span className="w-2 h-2 rounded-full bg-[#e6321f] animate-pulse" /> Simulation ready <span className="text-[#777d80]">•</span> 60 FPS</div>
+  </div>
+  <div className="p-7 sm:p-10 flex flex-col justify-center bg-[#b8e0d8] text-[#111214]">
+    <div className="flex flex-wrap items-center gap-2 mb-4"><span className="flex items-center gap-1.5 text-[10px] ms-eyebrow bg-[#111214] text-[#b8e0d8] px-2.5 py-1"><Sparkles size={11} /> ROBOTICS LAB</span><span className="flex items-center gap-1.5 text-[10px] ms-eyebrow text-[#111214] border border-[#111214]/30 px-2.5 py-1"><Gauge size={11} /> VERIFIED MODEL</span></div>
+    <h2 className="text-2xl sm:text-4xl font-black leading-[1.08] tracking-[-.04em] max-w-xl mb-4">Autonomous line follower robotics lab.</h2>
+    <p className="text-sm text-[#365351] leading-relaxed mb-7 max-w-xl">Build, tune, and observe a complete differential-drive robot with live firmware, optical sensing, motor control, and a synchronized 3D arena.</p>
+    <div className="flex flex-wrap items-center gap-3"><button onClick={onLaunchLineFollowerLab} className="ms-button flex items-center gap-2 px-5 py-3 bg-[#e6321f] hover:bg-[#bd2719] text-white font-bold text-xs cursor-pointer shadow-[4px_4px_0_#111214]" data-testid="launch-line-follower-lab-btn"><Play size={14} fill="currentColor" /> Launch lab <ArrowRight size={14} /></button>{onViewSchematic && <button onClick={onViewSchematic} className="ms-button flex items-center gap-1.5 px-4 py-3 bg-[#f7f7f2]/60 hover:bg-[#f7f7f2] text-[#111214] border border-[#111214]/30 text-xs font-bold cursor-pointer"><Layers size={13} /> View schematic</button>}<button onClick={onCreateNewCircuit} className="ms-button flex items-center gap-1.5 px-4 py-3 text-[#111214] hover:text-[#e6321f] text-xs font-bold cursor-pointer"><Cpu size={13} /> New circuit</button></div>
+    <div className="mt-7 pt-4 border-t border-[#111214]/20 flex items-center gap-5 text-[10px] ms-mono text-[#365351]"><span className="flex items-center gap-1.5"><CircuitBoard size={13} /> 4 hardware models</span><span>8-channel IR</span><span>PID control</span></div>
+  </div>
+</section>;

@@ -181,7 +181,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   };
 
   return (
-    <div className="flex flex-col w-screen h-screen bg-[#f5f7fa] text-[#172033] font-sans overflow-hidden select-none">
+    <div className="dashboard-shell flex flex-col w-screen h-screen font-sans overflow-hidden select-none">
       {/* Refined Global Top Navbar */}
       <DashboardTopNavbar
         onNavigateHome={() => {
@@ -218,7 +218,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
 
         {/* Scrollable Center Content Area */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-6 max-w-[1380px] mx-auto w-full">
+        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 max-w-[1440px] mx-auto w-full">
           {!searchQuery.trim() && (
             <>
               {/* Engineering Spotlight / Hero Banner */}
@@ -256,7 +256,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e2e8f0]">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-xl font-bold text-[#172033] tracking-tight">
+                  <h3 className="dashboard-section-title text-xl font-black tracking-tight">
                     Circuit Projects
                   </h3>
                   <span className="text-xs font-mono font-medium text-[#64748b] bg-[#f1f5f9] px-2.5 py-0.5 rounded-full border border-[#e2e8f0]">
@@ -387,7 +387,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div
                       key={project.id}
                       onClick={() => !isEditing && onOpenProject(project)}
-                      className="group bg-white hover:bg-[#fcfdfd] rounded-2xl border border-[#e2e8f0] hover:border-[#1677ff]/50 transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer shadow-xs hover:shadow-md relative hover:-translate-y-0.5"
+                      className="dashboard-project-card group bg-white hover:bg-[#fcfdfd] rounded-2xl border border-[#e2e8f0] hover:border-[#1677ff]/50 transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer shadow-xs hover:shadow-md relative hover:-translate-y-0.5"
                       data-testid={`project-card-${project.id}`}
                     >
                       {/* Circuit Thumbnail SVG Header */}
@@ -423,7 +423,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                       </div>
 
                       {/* Card Body & Title */}
-                      <div className="p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                      <div className="project-card-body p-4 sm:p-5 flex-1 flex flex-col justify-between">
                         <div>
                           {isEditing ? (
                             <div
