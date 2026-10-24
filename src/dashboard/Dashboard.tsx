@@ -242,7 +242,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         />
 
         {/* Scrollable Center Content Area with Electric-Yellow Scrollbar */}
-        <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 max-w-[1440px] mx-auto w-full">
+        <main
+          className="flex-1 overflow-y-auto w-full"
+          style={{
+            flex: 1,
+            width: '100%',
+            maxWidth: 'none',
+            overflowY: 'auto',
+          }}
+        >
+          <div className="max-w-[1440px] mx-auto px-4 sm:px-8 py-8 w-full">
           {!searchQuery.trim() && (
             <>
               {/* Featured System 04 Hero Banner */}
@@ -279,31 +288,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
           {/* Circuit Projects Section Header & Controls */}
           <section className="mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#212354]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#FFEA00]/30">
               <div>
                 <div className="flex items-center gap-3 mb-1">
-                  <h3 className="text-xl font-black tracking-tight text-white font-mono flex items-center gap-2">
-                    <Terminal size={18} className="text-[#fff000]" />
+                  <h3 className="text-xl font-black tracking-tight text-[#FFEA00] font-mono flex items-center gap-2">
+                    <Terminal size={18} className="text-[#FFEA00]" />
                     <span>Circuit Projects</span>
                   </h3>
-                  <span className="text-[10px] font-mono font-bold text-[#fff000] bg-[#07081e] px-2.5 py-0.5 border border-[#fff000]">
+                  <span className="text-[10px] font-mono font-bold text-[#090428] bg-[#FFEA00] px-2.5 py-0.5 border border-[#FFEA00]">
                     {projects.length} Total
                   </span>
                 </div>
-                <p className="text-xs font-mono text-[#8b8ac4]">
+                <p className="text-xs font-mono text-[#FFF36D]/80">
                   Interactive schematic capture, component wiring, firmware editor, and physical robotics simulation.
                 </p>
               </div>
 
               {/* Stats Counters */}
               <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
-                <div className="px-3 py-1.5 bg-[#0c0d30] border border-[#212354] flex items-center gap-2">
-                  <span className="text-[10px] text-[#8b8ac4] uppercase">Parts</span>
+                <div className="px-3 py-1.5 bg-[#110849] border border-[#FFEA00]/40 flex items-center gap-2">
+                  <span className="text-[10px] text-[#FFF36D]/70 uppercase">Parts</span>
                   <span className="text-[#00f0ff] font-bold">{totalParts}</span>
                 </div>
-                <div className="px-3 py-1.5 bg-[#0c0d30] border border-[#212354] flex items-center gap-2">
-                  <span className="text-[10px] text-[#8b8ac4] uppercase">Wires</span>
-                  <span className="text-[#fff000] font-bold">{totalWires}</span>
+                <div className="px-3 py-1.5 bg-[#110849] border border-[#FFEA00]/40 flex items-center gap-2">
+                  <span className="text-[10px] text-[#FFF36D]/70 uppercase">Wires</span>
+                  <span className="text-[#FFEA00] font-bold">{totalWires}</span>
                 </div>
               </div>
             </div>
@@ -313,13 +322,13 @@ export const Dashboard: React.FC<DashboardProps> = ({
           <section className="mb-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               {/* Filter Tabs matching Image 2 */}
-              <div className="flex items-center bg-[#0c0d30] p-1 border border-[#212354] text-xs font-mono">
+              <div className="flex items-center bg-[#110849] p-1 border border-[#FFEA00]/40 text-xs font-mono">
                 <button
                   onClick={() => setFilterTab('all')}
                   className={`px-3.5 py-1.5 transition-all cursor-pointer font-bold ${
                     filterTab === 'all'
-                      ? 'bg-[#fff000] text-[#07081e] shadow-sm'
-                      : 'text-[#8b8ac4] hover:text-[#fff000]'
+                      ? 'bg-[#FFEA00] text-[#090428] shadow-sm'
+                      : 'text-[#FFF36D]/80 hover:text-[#FFEA00]'
                   }`}
                   data-testid="filter-tab-all"
                 >
@@ -329,8 +338,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onClick={() => setFilterTab('custom')}
                   className={`px-3.5 py-1.5 transition-all cursor-pointer font-bold ${
                     filterTab === 'custom'
-                      ? 'bg-[#fff000] text-[#07081e] shadow-sm'
-                      : 'text-[#8b8ac4] hover:text-[#fff000]'
+                      ? 'bg-[#FFEA00] text-[#090428] shadow-sm'
+                      : 'text-[#FFF36D]/80 hover:text-[#FFEA00]'
                   }`}
                   data-testid="filter-tab-custom"
                 >
@@ -340,8 +349,8 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   onClick={() => setFilterTab('starters')}
                   className={`px-3.5 py-1.5 transition-all cursor-pointer font-bold ${
                     filterTab === 'starters'
-                      ? 'bg-[#fff000] text-[#07081e] shadow-sm'
-                      : 'text-[#8b8ac4] hover:text-[#fff000]'
+                      ? 'bg-[#FFEA00] text-[#090428] shadow-sm'
+                      : 'text-[#FFF36D]/80 hover:text-[#FFEA00]'
                   }`}
                   data-testid="filter-tab-starters"
                 >
@@ -351,17 +360,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* Sort Selector Dropdown */}
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-[#0c0d30] px-3 py-1.5 border border-[#212354] text-xs font-mono text-[#8b8ac4]">
-                  <SlidersHorizontal size={13} className="text-[#fff000]" />
+                <div className="flex items-center gap-1.5 bg-[#110849] px-3 py-1.5 border border-[#FFEA00]/40 text-xs font-mono text-[#FFF36D]/80">
+                  <SlidersHorizontal size={13} className="text-[#FFEA00]" />
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="bg-transparent text-xs text-[#d5d4fc] outline-none cursor-pointer font-mono"
+                    className="bg-transparent text-xs text-[#FFF36D] outline-none cursor-pointer font-mono"
                     data-testid="dashboard-sort-select"
                   >
-                    <option value="modified" className="bg-[#0c0d30]">Recently Modified</option>
-                    <option value="title" className="bg-[#0c0d30]">Title (A-Z)</option>
-                    <option value="created" className="bg-[#0c0d30]">Date Created</option>
+                    <option value="modified" className="bg-[#110849] text-[#FFF36D]">Recently Modified</option>
+                    <option value="title" className="bg-[#110849] text-[#FFF36D]">Title (A-Z)</option>
+                    <option value="created" className="bg-[#110849] text-[#FFF36D]">Date Created</option>
                   </select>
                 </div>
               </div>
@@ -371,14 +380,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Project Cards Grid */}
           <section className="pb-16">
             {filteredProjects.length === 0 ? (
-              <div className="text-center py-16 px-6 border-2 border-dashed border-[#212354] bg-[#0c0d30] max-w-lg mx-auto my-6">
-                <div className="w-12 h-12 bg-[#07081e] border border-[#fff000] flex items-center justify-center mx-auto mb-3 text-[#fff000]">
+              <div className="text-center py-16 px-6 border-2 border-dashed border-[#FFEA00]/30 bg-[#110849] max-w-lg mx-auto my-6">
+                <div className="w-12 h-12 bg-[#090428] border border-[#FFEA00] flex items-center justify-center mx-auto mb-3 text-[#FFEA00]">
                   <Layers size={24} />
                 </div>
                 <h3 className="text-sm font-bold text-white mb-1 font-mono">
                   {searchQuery ? 'No matching circuits found' : 'No projects in this category'}
                 </h3>
-                <p className="text-xs text-[#8b8ac4] max-w-sm mx-auto mb-5 leading-relaxed font-mono">
+                <p className="text-xs text-[#FFF36D]/80 max-w-sm mx-auto mb-5 leading-relaxed font-mono">
                   {searchQuery
                     ? `No circuit titles match "${searchQuery}". Try a different keyword.`
                     : 'Start a new circuit from scratch or launch one of our verified starter robotics templates.'}
@@ -386,14 +395,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {searchQuery ? (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="px-4 py-2 bg-[#07081e] hover:bg-[#151745] text-xs font-mono font-bold text-[#fff000] border border-[#fff000] transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-[#090428] hover:bg-[#1A1054] text-xs font-mono font-bold text-[#FFEA00] border border-[#FFEA00] transition-colors cursor-pointer"
                   >
                     Clear Search Filter
                   </button>
                 ) : (
                   <button
                     onClick={handleCreateNew}
-                    className="px-5 py-2.5 bg-[#fff000] hover:bg-[#ffe600] text-[#07081e] font-mono font-black text-xs shadow-btn-yellow transition-all cursor-pointer"
+                    className="px-5 py-2.5 bg-[#FFEA00] hover:bg-[#FFE000] text-[#090428] font-mono font-black text-xs shadow-btn-yellow transition-all cursor-pointer"
                   >
                     + Create First Circuit
                   </button>
@@ -418,11 +427,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     <div
                       key={project.id}
                       onClick={() => !isEditing && onOpenProject(project)}
-                      className="dashboard-project-card group bg-[#0c0d30] hover:bg-[#10123d] border border-[#212354] hover:border-[#fff000] transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer hover:shadow-hard-yellow relative hover:-translate-y-1"
+                      className="dashboard-project-card group bg-[#110849] hover:bg-[#160c5a] border border-[#FFEA00]/30 hover:border-[#FFEA00] transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer hover:shadow-[4px_4px_0px_#FFEA00] relative hover:-translate-y-1"
                       data-testid={`project-card-${project.id}`}
                     >
                       {/* Circuit Thumbnail SVG Header */}
-                      <div className="h-44 bg-[#07081e] border-b border-[#212354] relative overflow-hidden flex items-center justify-center group-hover:brightness-105 transition-all">
+                      <div className="h-44 bg-[#0D063A] border-b border-[#FFEA00]/30 relative overflow-hidden flex items-center justify-center group-hover:brightness-105 transition-all">
                         <CircuitThumbnail
                           components={project.document.components}
                           wires={project.document.wires}
@@ -432,11 +441,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         {/* Category Badge */}
                         <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
                           {project.isStarter ? (
-                            <span className="flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 bg-[#fff000] text-[#07081e]">
+                            <span className="flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 bg-[#FFEA00] text-[#090428]">
                               <Sparkles size={9} strokeWidth={2.5} /> STARTER LAB
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 bg-[#00f0ff] text-[#07081e]">
+                            <span className="flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 bg-[#00f0ff] text-[#090428]">
                               <Cpu size={9} /> CUSTOM DESIGN
                             </span>
                           )}
@@ -444,17 +453,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                         {/* Part & Wire Counters Overlay */}
                         <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 text-[9px] font-mono z-10">
-                          <span className="bg-[#07081e]/90 px-2 py-0.5 border border-[#212354] text-[#8b8ac4]">
+                          <span className="bg-[#090428]/90 px-2 py-0.5 border border-[#FFEA00]/30 text-[#FFF36D]/80">
                             <span className="text-[#00f0ff] font-bold">{compCount}</span> {compCount === 1 ? 'part' : 'parts'}
                           </span>
-                          <span className="bg-[#07081e]/90 px-2 py-0.5 border border-[#212354] text-[#8b8ac4]">
-                            <span className="text-[#fff000] font-bold">{wireCount}</span> {wireCount === 1 ? 'wire' : 'wires'}
+                          <span className="bg-[#090428]/90 px-2 py-0.5 border border-[#FFEA00]/30 text-[#FFF36D]/80">
+                            <span className="text-[#FFEA00] font-bold">{wireCount}</span> {wireCount === 1 ? 'wire' : 'wires'}
                           </span>
                         </div>
                       </div>
 
                       {/* Card Body & Title */}
-                      <div className="project-card-body p-4 sm:p-5 flex-1 flex flex-col justify-between bg-[#0c0d30]">
+                      <div className="project-card-body p-4 sm:p-5 flex-1 flex flex-col justify-between bg-[#110849]">
                         <div>
                           {isEditing ? (
                             <div
@@ -487,12 +496,12 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                           ) : (
                             <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <h4 className="text-xs font-mono font-bold text-white group-hover:text-[#fff000] transition-colors leading-snug line-clamp-1">
+                              <h4 className="text-xs font-mono font-bold text-white group-hover:text-[#FFEA00] transition-colors leading-snug line-clamp-1">
                                 {project.name}
                               </h4>
                               <button
                                 onClick={(e) => startRenaming(project, e)}
-                                className="opacity-0 group-hover:opacity-100 text-[#8b8ac4] hover:text-[#fff000] p-1 transition-opacity cursor-pointer"
+                                className="opacity-0 group-hover:opacity-100 text-[#FFF36D]/70 hover:text-[#FFEA00] p-1 transition-opacity cursor-pointer"
                                 title="Rename project"
                                 data-testid={`rename-btn-${project.id}`}
                               >
@@ -501,14 +510,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                           )}
 
-                          <p className="text-[11px] font-mono text-[#8b8ac4] line-clamp-2 leading-relaxed mb-4">
+                          <p className="text-[11px] font-mono text-[#FFF36D]/75 line-clamp-2 leading-relaxed mb-4">
                             {project.description || 'Custom interactive circuit and firmware simulation.'}
                           </p>
                         </div>
 
                         {/* Card Footer: Metadata & Actions */}
-                        <div className="pt-3 border-t border-[#212354] flex items-center justify-between text-xs font-mono">
-                          <div className="flex items-center gap-1 text-[10px] text-[#8b8ac4]">
+                        <div className="pt-3 border-t border-[#FFEA00]/30 flex items-center justify-between text-xs font-mono">
+                          <div className="flex items-center gap-1 text-[10px] text-[#FFF36D]/70">
                             <Clock size={11} />
                             <span>{formatRelativeTime(project.updatedAt)}</span>
                           </div>
@@ -516,7 +525,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           <div className="flex items-center gap-1.5">
                             <button
                               onClick={(e) => handleDuplicate(project.id, e)}
-                              className="p-1 text-[#8b8ac4] hover:text-[#fff000] hover:bg-[#151745] transition-colors cursor-pointer"
+                              className="p-1 text-[#FFF36D]/70 hover:text-[#FFEA00] hover:bg-[#1A1054] transition-colors cursor-pointer"
                               title="Duplicate circuit project"
                               data-testid={`duplicate-project-btn-${project.id}`}
                             >
@@ -528,7 +537,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 e.stopPropagation();
                                 setDeletingProjectId(project.id);
                               }}
-                              className="p-1 text-[#8b8ac4] hover:text-rose-400 hover:bg-rose-950/30 transition-colors cursor-pointer"
+                              className="p-1 text-[#FFF36D]/70 hover:text-rose-400 hover:bg-rose-950/30 transition-colors cursor-pointer"
                               title="Delete circuit project"
                               data-testid={`delete-project-btn-${project.id}`}
                             >
@@ -541,7 +550,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   e.stopPropagation();
                                   handleLaunchLineFollower(project);
                                 }}
-                                className="px-2 py-0.5 text-[10px] text-[#00f0ff] bg-[#00f0ff]/15 hover:bg-[#00f0ff] hover:text-[#07081e] border border-[#00f0ff]/40 transition-all font-bold flex items-center gap-1 cursor-pointer ml-1"
+                                className="px-2 py-0.5 text-[10px] text-[#00f0ff] bg-[#00f0ff]/15 hover:bg-[#00f0ff] hover:text-[#090428] border border-[#00f0ff]/40 transition-all font-bold flex items-center gap-1 cursor-pointer ml-1"
                                 title="Launch dedicated Line Follower Lab"
                                 data-testid={`launch-lab-card-btn-${project.id}`}
                               >
@@ -556,7 +565,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   e.stopPropagation();
                                   handleLaunchRobotArm(project);
                                 }}
-                                className="px-2 py-0.5 text-[10px] text-[#fff000] bg-[#fff000]/15 hover:bg-[#fff000] hover:text-[#07081e] border border-[#fff000]/40 transition-all font-bold flex items-center gap-1 cursor-pointer ml-1"
+                                className="px-2 py-0.5 text-[10px] text-[#FFEA00] bg-[#FFEA00]/15 hover:bg-[#FFEA00] hover:text-[#090428] border border-[#FFEA00]/40 transition-all font-bold flex items-center gap-1 cursor-pointer ml-1"
                                 title="Launch dedicated 5-Axis Servo Robot Arm Lab"
                                 data-testid={`launch-arm-card-btn-${project.id}`}
                               >
@@ -567,7 +576,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
                             <button
                               onClick={() => onOpenProject(project)}
-                              className="ml-1 flex items-center gap-1 px-2.5 py-1 bg-[#fff000] hover:bg-[#ffe600] text-[#07081e] font-mono font-bold text-[11px] transition-all cursor-pointer"
+                              className="ml-1 flex items-center gap-1 px-2.5 py-1 bg-[#FFEA00] hover:bg-[#FFE000] text-[#090428] font-mono font-bold text-[11px] transition-all cursor-pointer"
                               data-testid={`open-project-btn-${project.id}`}
                             >
                               <span>Open</span>
@@ -582,6 +591,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
               </div>
             )}
           </section>
+          </div>
         </main>
       </div>
 

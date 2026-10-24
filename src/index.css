@@ -1,83 +1,156 @@
 @import "tailwindcss";
 
 :root {
+  /* User Template Tokens */
+  --yellow: #FFEA00;
+  --yellow-Soft: #FFF36D;
+  --yellow-soft: #FFF36D;
+  --yellow-dim: rgba(255, 234, 0, 0.45);
+  --indigo-card: #110849;
+  --indigo-deep: #09042C;
+  --cobalt: #1D2BFF;
+  --magenta: #C81EFF;
+
   /* Surfaces */
-  --ms-bg-base: #07081e;        /* Deep midnight canvas */
-  --ms-bg-indigo: #0a0b28;      /* Primary dark indigo */
-  --ms-bg-elevated: #0e1038;    /* Elevated panel surface */
-  --ms-bg-card: #0c0d30;        /* Technical card surface */
+  --ms-bg-base: #080326;        /* Deep ultramarine canvas; legacy: --ms-bg-base: #07081e */
+  --ms-bg-indigo: #09042C;      /* Primary dark indigo */
+  --ms-bg-elevated: #110849;    /* Elevated panel surface */
+  --ms-bg-card: #110849;        /* Royal indigo technical card */
 
   /* Electric Accents */
-  --ms-electric-yellow: #fff000; /* Primary brand yellow */
+  --ms-electric-yellow: #FFEA00; /* Primary brand yellow; legacy: --ms-electric-yellow: #fff000 */
   --ms-yellow-hover: #ffe600;    /* Interactive hover */
   --ms-accent-cyan: #00f0ff;     /* Technical secondary accent */
   --ms-accent-violet: #7777ff;   /* Signal glow / secondary */
 
   /* Typography */
-  --ms-text-primary: #ffffff;    /* Bright white */
-  --ms-text-secondary: #d5d4fc;  /* Soft technical lavender */
-  --ms-text-muted: #8b8ac4;      /* Monospace labels & coords */
-  --ms-text-dim: #54538a;        /* Background annotations */
+  --ms-text-primary: #FFEA00;    /* Electric yellow */
+  --ms-text-secondary: #FFF36D;  /* Warm yellow soft */
+  --ms-text-muted: #FFF36D;      /* Warm yellow metadata */
+  --ms-text-dim: #988ac8;        /* Subtle annotations */
 
   /* Framing & Shadows */
-  --ms-border-active: #fff000;
-  --ms-border-subtle: #272960;
-  --ms-border-dark: #191b48;
-  --ms-shadow-hard: 8px 8px 0px #fff000;
-  --ms-shadow-btn: 4px 4px 0px #fff000;
+  --ms-border-active: #FFEA00;
+  --ms-border-subtle: rgba(255, 234, 0, 0.45);
+  --ms-border-dark: #212354;
+  --ms-shadow-hard: 10px 10px 0px #FFEA00;
+  --ms-shadow-btn: 4px 4px 0px #FFEA00;
 }
 
 @layer base {
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: #07081e;
-    color: #d5d4fc;
+    background: #09042C;
+    color: #FFEA00;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
   button, input, select { font: inherit; }
   button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
-    outline: 2px solid #fff000;
+    outline: 2px solid #FFEA00;
     outline-offset: 2px;
   }
 }
 
-/* High-voltage retro-futuristic electric-yellow scrollbar */
+/* 1 & 2. SIDEBAR: Single Active Item + Left Padding When Expanded */
+.sidebar.expanded .side-icon,
+.sidebar[data-expanded="true"] .side-icon,
+.side-nav-item {
+  display: flex;
+  align-items: center;
+  padding: 0 16px 0 20px; /* Moves icons & text away from the left screen edge */
+  gap: 12px;
+  width: 100%;
+  height: 48px;
+}
+
+/* When sidebar is collapsed (narrow), keep icons centered */
+.sidebar:not(.expanded) .side-icon,
+.sidebar[data-expanded="false"] .side-icon {
+  justify-content: center;
+  padding: 0;
+}
+
+/* Native scrollbar pinned to far right */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: #07081e;
-  border-left: 1px solid #191b48;
+  background: #080326;
+  border-left: 1px solid rgba(255, 234, 0, 0.2);
 }
 ::-webkit-scrollbar-thumb {
-  background: #fff000;
-  border: 2px solid #07081e;
+  background: #FFEA00;
+  border-radius: 6px;
+  box-shadow: 0 0 8px rgba(255, 234, 0, 0.5);
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #ffe600;
 }
 
 .dashboard-shell {
-  background: #07081e !important;
-  color: #d5d4fc !important;
+  background: #09042C !important;
+  color: #FFEA00 !important;
   position: relative;
 }
 .dashboard-shell main {
-  scrollbar-color: #fff000 #07081e;
+  scrollbar-color: #FFEA00 #080326;
+  flex: 1;
+  width: 100%;
+  max-width: none;
+  overflow-y: auto;
 }
 
-/* Hard electric-yellow offset shadows matching Image 2 */
+/* Hard electric-yellow offset shadows matching Image 1 */
 .shadow-hard-yellow {
-  box-shadow: 8px 8px 0px #fff000;
+  box-shadow: 10px 10px 0px #FFEA00;
 }
 .shadow-btn-yellow {
-  box-shadow: 4px 4px 0px #fff000;
+  box-shadow: 4px 4px 0px #FFEA00;
 }
 .shadow-btn-yellow-sm {
-  box-shadow: 2px 2px 0px #fff000;
+  box-shadow: 2px 2px 0px #FFEA00;
+}
+
+/* 4. SHORTER, SLEEKER HERO CARD RECTANGLE */
+.hero-card {
+  min-height: 350px; /* Reduced from 455px */
+}
+
+.schematic-top-row {
+  height: 44px; /* Reduced from 58px */
+}
+
+.schematic-svg {
+  height: 195px; /* Reduced from 260px */
+}
+
+.hero-details {
+  padding: 24px 44px 22px 40px; /* Reduced vertical padding */
+}
+
+.badge-row {
+  margin-bottom: 14px;
+}
+
+.hero-heading {
+  font-size: 40px;
+  margin-bottom: 12px;
+}
+
+.hero-description {
+  font-size: 16px;
+  margin-bottom: 20px;
+}
+
+.cta-row {
+  margin-bottom: 20px;
+}
+
+.hero-divider {
+  margin-bottom: 14px;
 }
 
 .ms-eyebrow {
@@ -93,11 +166,11 @@
 }
 .ms-button:active {
   transform: translate(2px, 2px);
-  box-shadow: 2px 2px 0px #fff000;
+  box-shadow: 2px 2px 0px #FFEA00;
 }
 
 @media (max-width: 800px) {
   .dashboard-shell main { padding-left: 16px !important; padding-right: 16px !important; }
-  .dashboard-shell .dashboard-sidebar { width: 60px !important; }
-  .dashboard-shell .dashboard-sidebar .sidebar-avatar { display: none; }
+  .dashboard-shell .dashboard-sidebar { width: 56px !important; }
+  .dashboard-shell .dashboard-sidebar .side-avatar-ring { display: none; }
 }
