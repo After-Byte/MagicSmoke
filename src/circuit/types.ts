@@ -35,7 +35,15 @@ export interface PinDefinition {
 
 export interface ComponentInstance {
   id: string;
-  type: 'ESP32_DEVKIT_V1' | 'TB6612FNG' | 'N20_MOTOR' | 'BATTERY_PACK' | 'GROUND_BUS' | 'HC_SR04';
+  type:
+    | 'ESP32_DEVKIT_V1'
+    | 'TB6612FNG'
+    | 'N20_MOTOR'
+    | 'BATTERY_PACK'
+    | 'GROUND_BUS'
+    | 'HC_SR04'
+    | 'ARDUINO_UNO_R3'
+    | 'IR_SENSOR_ARRAY_8CH';
   name: string;
   position: { x: number; y: number };
   pins: Record<string, PinDefinition>;

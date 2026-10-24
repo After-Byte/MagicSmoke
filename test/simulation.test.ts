@@ -296,9 +296,9 @@ describe('MagicSmoke Simulation Engine — Multi-Layer Architecture', () => {
       pose = chassis.update(-0.3, -0.3, 1.0);
       expect(pose.z).toBeCloseTo(0.2, 3);
 
-      // 3. Turn Right: vLeft = 0.2 m/s, vRight = -0.2 m/s (point turn)
+      // 3. Turn Right: vLeft = 0.2 m/s, vRight = -0.2 m/s (point turn towards +X)
       pose = chassis.update(0.2, -0.2, 0.5);
-      expect(pose.yawRad).toBeLessThan(0); // rotates clockwise/right
+      expect(pose.yawRad).toBeGreaterThan(0); // rotates clockwise towards right (+X)
     });
   });
 

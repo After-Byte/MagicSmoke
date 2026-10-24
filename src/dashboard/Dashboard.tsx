@@ -31,18 +31,21 @@ import {
   FolderOpen,
   Activity,
   Zap,
+  Play,
 } from 'lucide-react';
 
 interface DashboardProps {
   onOpenProject: (project: StoredProject) => void;
   hasActiveSession?: boolean;
   onReturnToEditor?: () => void;
+  onLaunchLineFollowerLab?: (project?: StoredProject) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
   onOpenProject,
   hasActiveSession,
   onReturnToEditor,
+  onLaunchLineFollowerLab,
 }) => {
   const [projects, setProjects] = useState<StoredProject[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -277,6 +280,61 @@ export const Dashboard: React.FC<DashboardProps> = ({
                   <div className="text-amber-400 font-bold">Ready</div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Line Follower Robotics Lab Spotlight */}
+        <section className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-[#071322] via-[#09182b] to-[#071220] border border-[#00f0ff]/30 shadow-[0_0_30px_rgba(0,240,255,0.08)] relative overflow-hidden">
+          <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-[#00f0ff]/10 to-transparent pointer-events-none" />
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
+            <div className="max-w-2xl space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="flex items-center gap-1 text-[10px] font-mono font-bold text-[#00f0ff] bg-[#00f0ff]/15 px-2.5 py-0.5 rounded-full border border-[#00f0ff]/30 uppercase tracking-wider">
+                  <Sparkles size={11} /> Featured Simulation Lab
+                </span>
+                <span className="text-[10px] font-mono text-emerald-400 bg-emerald-950/50 px-2 py-0.5 rounded-full border border-emerald-800/50">
+                  Closed-Loop Feedback Verified
+                </span>
+              </div>
+              <h2 className="text-xl md:text-2xl font-bold text-[#f8fafc] tracking-tight">
+                Autonomous Line Follower Robotics Lab
+              </h2>
+              <p className="text-xs text-[#94a3b8] leading-relaxed font-mono">
+                Complete hardware simulation: Arduino Uno R3 running C++ PID firmware, 8-channel optical reflectance sensor array, TB6612FNG dual motor driver, and unicycle differential drive kinematics inside an interactive 3D arena.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3 shrink-0">
+              <button
+                onClick={() => {
+                  const lfProject = projects.find((p) => p.id === 'starter_line_follower' || p.name.includes('Line Follower'));
+                  if (onLaunchLineFollowerLab) {
+                    onLaunchLineFollowerLab(lfProject);
+                  } else if (lfProject) {
+                    onOpenProject(lfProject);
+                  }
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#00f0ff] hover:bg-[#38bdf8] text-[#05080f] font-bold text-xs font-mono shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all active:scale-95"
+                data-testid="launch-line-follower-lab-btn"
+              >
+                <Play size={14} />
+                <span>Launch Line Follower Lab</span>
+                <ArrowRight size={14} />
+              </button>
+
+              <button
+                onClick={() => {
+                  const lfProject = projects.find((p) => p.id === 'starter_line_follower' || p.name.includes('Line Follower'));
+                  if (lfProject) onOpenProject(lfProject);
+                }}
+                className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#0f1726] hover:bg-[#162338] text-[#cbd5e1] border border-[#213550] text-xs font-mono transition-colors"
+                title="Open schematic and wiring directly in Circuit Editor"
+                data-testid="view-schematic-btn"
+              >
+                <Layers size={13} />
+                <span>View Schematic</span>
+              </button>
             </div>
           </div>
         </section>
@@ -522,6 +580,25 @@ export const Dashboard: React.FC<DashboardProps> = ({
                           >
                             <Trash2 size={13} />
                           </button>
+
+                          {(project.id === 'starter_line_follower' || project.name.includes('Line Follower')) && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onLaunchLineFollowerLab) {
+                                  onLaunchLineFollowerLab(project);
+                                } else {
+                                  onOpenProject(project);
+                                }
+                              }}
+                              className="px-2.5 py-1.5 text-xs text-[#05080f] bg-[#00f0ff] hover:bg-[#38bdf8] rounded-lg transition-all font-bold flex items-center gap-1 shadow-[0_0_10px_rgba(0,240,255,0.2)] active:scale-95"
+                              title="Launch dedicated Line Follower Lab"
+                              data-testid={`launch-lab-card-btn-${project.id}`}
+                            >
+                              <Play size={11} />
+                              <span>Lab</span>
+                            </button>
+                          )}
 
                           <button
                             onClick={() => onOpenProject(project)}

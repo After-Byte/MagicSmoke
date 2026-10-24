@@ -1,0 +1,31 @@
+{
+  "schema_version": "1.0.0",
+  "id": "ir-sensor-array-8ch",
+  "name": "8-Channel Digital IR Reflectance Sensor Array",
+  "category": "sensor",
+  "description": "8-channel infrared reflectance sensor bar (TCRT5000 / QTR-8RC compatible) providing digital line detection across a 70mm span with onboard comparator circuits",
+  "operating_voltage": {
+    "min": 3.0,
+    "typical": 5.0,
+    "max": 5.5
+  },
+  "current_draw_typical_ma": 100,
+  "protocol": "DIGITAL_PARALLEL",
+  "pins": [
+    { "name": "VCC", "type": "power", "description": "3.3V-5V Power Supply Input", "nominal_voltage": 5.0, "blender_empty": "pin_VCC" },
+    { "name": "GND", "type": "ground", "description": "Common Ground Reference (0V)", "nominal_voltage": 0.0, "blender_empty": "pin_GND" },
+    { "name": "D1", "type": "digital_out", "description": "IR Channel 1 Digital Output (Far Left)", "blender_empty": "pin_D1" },
+    { "name": "D2", "type": "digital_out", "description": "IR Channel 2 Digital Output", "blender_empty": "pin_D2" },
+    { "name": "D3", "type": "digital_out", "description": "IR Channel 3 Digital Output", "blender_empty": "pin_D3" },
+    { "name": "D4", "type": "digital_out", "description": "IR Channel 4 Digital Output (Center Left)", "blender_empty": "pin_D4" },
+    { "name": "D5", "type": "digital_out", "description": "IR Channel 5 Digital Output (Center Right)", "blender_empty": "pin_D5" },
+    { "name": "D6", "type": "digital_out", "description": "IR Channel 6 Digital Output", "blender_empty": "pin_D6" },
+    { "name": "D7", "type": "digital_out", "description": "IR Channel 7 Digital Output", "blender_empty": "pin_D7" },
+    { "name": "D8", "type": "digital_out", "description": "IR Channel 8 Digital Output (Far Right)", "blender_empty": "pin_D8" }
+  ],
+  "visual": {
+    "mesh_file": "mesh.glb",
+    "color_hex": "#1e293b",
+    "dimensions_m": [0.075, 0.005, 0.016]
+  }
+}

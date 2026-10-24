@@ -1,0 +1,48 @@
+{
+  "schema_version": "1.0.0",
+  "id": "arduino-uno-r3",
+  "name": "Arduino Uno R3",
+  "category": "mcu",
+  "description": "Microchip ATmega328P 8-bit AVR RISC microcontroller board with 14 digital I/O pins, 6 analog inputs, and 16 MHz quartz crystal",
+  "operating_voltage": {
+    "min": 4.5,
+    "typical": 5.0,
+    "max": 5.5
+  },
+  "current_draw_typical_ma": 45,
+  "pins": [
+    { "name": "5V", "type": "power", "description": "5V Regulated Power Output", "nominal_voltage": 5.0, "blender_empty": "pin_5V" },
+    { "name": "3V3", "type": "power", "description": "3.3V Regulated Output", "nominal_voltage": 3.3, "blender_empty": "pin_3V3" },
+    { "name": "GND1", "type": "ground", "description": "Power Header System Ground 1", "nominal_voltage": 0.0, "blender_empty": "pin_GND1" },
+    { "name": "GND2", "type": "ground", "description": "Power Header System Ground 2", "nominal_voltage": 0.0, "blender_empty": "pin_GND2" },
+    { "name": "GND3", "type": "ground", "description": "Digital Header System Ground 3", "nominal_voltage": 0.0, "blender_empty": "pin_GND3" },
+    { "name": "VIN", "type": "power", "description": "External DC Voltage Input (7-12V)", "nominal_voltage": 9.0, "blender_empty": "pin_VIN" },
+    { "name": "RESET", "type": "digital_in", "description": "Active-low Reset line", "blender_empty": "pin_RESET" },
+    { "name": "D0", "type": "digital_in", "description": "Digital Pin 0 / USART RX", "blender_empty": "pin_D0" },
+    { "name": "D1", "type": "digital_out", "description": "Digital Pin 1 / USART TX", "blender_empty": "pin_D1" },
+    { "name": "D2", "type": "digital_in", "description": "Digital Pin 2 / External Interrupt 0", "blender_empty": "pin_D2" },
+    { "name": "D3", "type": "pwm_out", "description": "Digital Pin 3 / PWM (Timer 2B)", "blender_empty": "pin_D3" },
+    { "name": "D4", "type": "digital_in", "description": "Digital Pin 4", "blender_empty": "pin_D4" },
+    { "name": "D5", "type": "pwm_out", "description": "Digital Pin 5 / PWM (Timer 0B)", "blender_empty": "pin_D5" },
+    { "name": "D6", "type": "pwm_out", "description": "Digital Pin 6 / PWM (Timer 0A)", "blender_empty": "pin_D6" },
+    { "name": "D7", "type": "digital_in", "description": "Digital Pin 7", "blender_empty": "pin_D7" },
+    { "name": "D8", "type": "digital_in", "description": "Digital Pin 8", "blender_empty": "pin_D8" },
+    { "name": "D9", "type": "pwm_out", "description": "Digital Pin 9 / PWM (Timer 1A)", "blender_empty": "pin_D9" },
+    { "name": "D10", "type": "pwm_out", "description": "Digital Pin 10 / PWM (Timer 1B)", "blender_empty": "pin_D10" },
+    { "name": "D11", "type": "pwm_out", "description": "Digital Pin 11 / PWM (Timer 2A) / SPI MOSI", "blender_empty": "pin_D11" },
+    { "name": "D12", "type": "digital_in", "description": "Digital Pin 12 / SPI MISO", "blender_empty": "pin_D12" },
+    { "name": "D13", "type": "digital_out", "description": "Digital Pin 13 / Built-in LED / SPI SCK", "blender_empty": "pin_D13" },
+    { "name": "AREF", "type": "power", "description": "Analog Reference Voltage", "nominal_voltage": 5.0, "blender_empty": "pin_AREF" },
+    { "name": "A0", "type": "analog_in", "description": "Analog Input 0 / Digital Pin 14", "blender_empty": "pin_A0" },
+    { "name": "A1", "type": "analog_in", "description": "Analog Input 1 / Digital Pin 15", "blender_empty": "pin_A1" },
+    { "name": "A2", "type": "analog_in", "description": "Analog Input 2 / Digital Pin 16", "blender_empty": "pin_A2" },
+    { "name": "A3", "type": "analog_in", "description": "Analog Input 3 / Digital Pin 17", "blender_empty": "pin_A3" },
+    { "name": "A4", "type": "bidirectional", "description": "Analog Input 4 / Digital Pin 18 / I2C SDA", "blender_empty": "pin_A4" },
+    { "name": "A5", "type": "bidirectional", "description": "Analog Input 5 / Digital Pin 19 / I2C SCL", "blender_empty": "pin_A5" }
+  ],
+  "visual": {
+    "mesh_file": "mesh.glb",
+    "color_hex": "#00878f",
+    "dimensions_m": [0.0686, 0.015, 0.0534]
+  }
+}

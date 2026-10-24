@@ -3,6 +3,7 @@ import { TB6612FNGDriver, TB6612State } from '../circuit/TB6612FNGDriver';
 import { N20MotorModel } from '../robot/MotorModel';
 import { DifferentialDriveChassis, RobotPose } from '../robot/DifferentialDriveChassis';
 import { ESP32BehavioralRuntime } from '../runtime/ESP32BehavioralRuntime';
+import { ArduinoUnoBehavioralRuntime } from '../runtime/ArduinoUnoBehavioralRuntime';
 
 export interface MultiLayerDiagnosticSnapshot {
   timestampMs: number;
@@ -78,7 +79,7 @@ export class SimulationDiagnosticsCollector {
   private tickCount = 0;
 
   public captureSnapshot(
-    runtime: ESP32BehavioralRuntime,
+    runtime: ESP32BehavioralRuntime | ArduinoUnoBehavioralRuntime,
     circuit: CircuitEngine,
     driver: TB6612FNGDriver,
     driverState: TB6612State,

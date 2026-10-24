@@ -26,9 +26,9 @@ interface DragConnectingState {
 
 function getWireColor(pin?: PinDefinition): string {
   if (!pin) return '#00f0ff';
-  if (pin.id === 'GND' || pin.id === 'NEG' || pin.type === PinType.GROUND) return '#64748b';
-  if (pin.id === '3V3' || pin.id === 'VCC' || pin.type === PinType.POWER_VCC) return '#06b6d4';
-  if (pin.id === 'VM' || pin.id === 'POS' || pin.type === PinType.POWER_VM) return '#f59e0b';
+  if (pin.id === 'GND' || pin.id === 'NEG' || pin.id === 'GND1' || pin.id === 'GND2' || pin.id === 'GND3' || pin.type === PinType.GROUND) return '#64748b';
+  if (pin.id === '3V3' || pin.id === 'VCC' || pin.id === '5V' || pin.type === PinType.POWER_VCC) return '#06b6d4';
+  if (pin.id === 'VM' || pin.id === 'POS' || pin.id === 'VIN' || pin.type === PinType.POWER_VM) return '#f59e0b';
   if (pin.id === 'STBY') return '#10b981';
   if (pin.type === PinType.PWM_OUTPUT || pin.id === 'PWMA' || pin.id === 'PWMB') return '#a855f7';
   if (pin.id === 'AO1' || pin.id === 'BO1' || pin.id === 'M_POS') return '#ef4444';
@@ -879,6 +879,131 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
                     <text x={width / 2} y={96} textAnchor="middle" fill="#93c5fd" fontSize="7.5" fontFamily="monospace">
                       HC-SR04 40kHz
+                    </text>
+                  </g>
+                )}
+
+                {comp.type === 'ARDUINO_UNO_R3' && (
+                  <g pointerEvents="none">
+                    {/* Classic Arduino Teal FR4 PCB Body */}
+                    <rect
+                      x="0"
+                      y="26"
+                      width={width}
+                      height={height - 26}
+                      rx="6"
+                      fill="#005c5f"
+                      stroke="#00878f"
+                      strokeWidth="1.5"
+                    />
+
+                    {/* Mounting Holes with Gold Annular Rings */}
+                    <circle cx="14" cy="40" r="4" fill="#052c2e" stroke="#ca8a04" strokeWidth="1.2" />
+                    <circle cx={width - 14} cy="40" r="4" fill="#052c2e" stroke="#ca8a04" strokeWidth="1.2" />
+                    <circle cx="14" cy={height - 14} r="4" fill="#052c2e" stroke="#ca8a04" strokeWidth="1.2" />
+                    <circle cx={width - 14} cy={height - 14} r="4" fill="#052c2e" stroke="#ca8a04" strokeWidth="1.2" />
+
+                    {/* Silver USB Type-B Jack */}
+                    <rect x="8" y="32" width="30" height="34" rx="2" fill="#94a3b8" stroke="#475569" strokeWidth="1" />
+                    <rect x="13" y="38" width="20" height="22" fill="#090d14" rx="1" />
+                    <text x="23" y="52" textAnchor="middle" fill="#cbd5e1" fontSize="6.5" fontFamily="monospace">USB</text>
+
+                    {/* 2.1mm DC Power Barrel Jack */}
+                    <rect x="8" y={height - 48} width="36" height="32" rx="2" fill="#0f172a" stroke="#1e293b" strokeWidth="1" />
+                    <circle cx="26" cy={height - 32} r="6" fill="#334155" />
+                    <circle cx="26" cy={height - 32} r="2.5" fill="#020617" />
+
+                    {/* 16.000 MHz Silver Quartz Crystal */}
+                    <rect x="52" y="70" width="12" height="24" rx="3" fill="#cbd5e1" stroke="#64748b" strokeWidth="1" />
+                    <text x="58" y="85" textAnchor="middle" fill="#334155" fontSize="6" fontFamily="monospace" transform="rotate(-90 58 85)">16MHz</text>
+
+                    {/* Red Momentary Reset Pushbutton */}
+                    <rect x="50" y="34" width="16" height="16" rx="2" fill="#334155" />
+                    <circle cx="58" cy="42" r="5" fill="#ef4444" stroke="#b91c1c" strokeWidth="1" />
+
+                    {/* ATmega328P DIP-28 Dual In-Line IC in Socket */}
+                    <rect x={width / 2 - 14} y="95" width="38" height="130" rx="3" fill="#18181b" stroke="#3f3f46" strokeWidth="1.2" />
+                    {/* DIP Pin notches and legs */}
+                    <circle cx={width / 2 + 5} cy="102" r="3" fill="#09090b" />
+                    {[...Array(14)].map((_, i) => (
+                      <g key={i}>
+                        <rect x={width / 2 - 18} y={108 + i * 8} width="4" height="4" fill="#cbd5e1" />
+                        <rect x={width / 2 + 24} y={108 + i * 8} width="4" height="4" fill="#cbd5e1" />
+                      </g>
+                    ))}
+                    <text x={width / 2 + 5} y="165" textAnchor="middle" fill="#a1a1aa" fontSize="7.5" fontFamily="monospace" fontWeight="700" transform={`rotate(-90 ${width / 2 + 5} 165)`}>
+                      ATMEGA328P-PU
+                    </text>
+
+                    {/* Pin 13 Built-in SMD LED */}
+                    <rect x={width - 45} y="60" width="8" height="6" fill="#fef08a" stroke="#ca8a04" strokeWidth="0.8" />
+                    <circle cx={width - 41} cy="63" r="1.5" fill="#eab308" />
+                    <text x={width - 48} y="66" textAnchor="end" fill="#ca8a04" fontSize="6.5" fontFamily="monospace">L</text>
+
+                    {/* Board Silkscreen Labels */}
+                    <text x={width / 2 + 10} y="250" textAnchor="middle" fill="#f8fafc" fontSize="10.5" fontFamily="sans-serif" fontWeight="800" letterSpacing="0.5">
+                      ARDUINO
+                    </text>
+                    <text x={width / 2 + 10} y="265" textAnchor="middle" fill="#67e8f9" fontSize="8.5" fontFamily="monospace" fontWeight="700">
+                      UNO R3
+                    </text>
+                    <text x={width / 2 + 10} y="280" textAnchor="middle" fill="#cbd5e1" fontSize="6.5" fontFamily="monospace">
+                      16MHz AVR 5V
+                    </text>
+                  </g>
+                )}
+
+                {comp.type === 'IR_SENSOR_ARRAY_8CH' && (
+                  <g pointerEvents="none">
+                    {/* Dark Matte FR4 Sensor Bar Body */}
+                    <rect
+                      x="0"
+                      y="26"
+                      width={width}
+                      height={height - 26}
+                      rx="4"
+                      fill="#0f172a"
+                      stroke="#334155"
+                      strokeWidth="1.2"
+                    />
+
+                    {/* 8 Optical TCRT5000 IR Emitter/Receiver Pairs */}
+                    <g>
+                      {[...Array(8)].map((_, i) => {
+                        const cy = 38 + i * 20;
+                        return (
+                          <g key={i}>
+                            {/* Sensor Cell Border */}
+                            <rect x="25" y={cy - 7} width="55" height="14" rx="2" fill="#020617" stroke="#1e293b" strokeWidth="0.8" />
+                            {/* IR Emitter (Dark Blue/Clear LED) */}
+                            <circle cx="37" cy={cy} r="4" fill="#1e3a8a" stroke="#3b82f6" strokeWidth="0.8" />
+                            {/* IR Phototransistor (Dark Red Filtered Lens) */}
+                            <circle cx="53" cy={cy} r="4" fill="#7f1d1d" stroke="#ef4444" strokeWidth="0.8" />
+                            {/* Channel Label */}
+                            <text x="70" y={cy + 3} fill="#94a3b8" fontSize="7" fontFamily="monospace" fontWeight="700">
+                              CH{i + 1}
+                            </text>
+                            {/* Indicator LED */}
+                            <circle cx="95" cy={cy} r="2.5" fill="#10b981" opacity="0.8" />
+                          </g>
+                        );
+                      })}
+                    </g>
+
+                    {/* Potentiometer Calibration Section */}
+                    <rect x="120" y="45" width="30" height="25" rx="2" fill="#1e40af" stroke="#3b82f6" strokeWidth="1" />
+                    <circle cx="135" cy="57" r="6" fill="#ca8a04" stroke="#fef08a" strokeWidth="0.8" />
+                    <line x1="131" y1="57" x2="139" y2="57" stroke="#713f12" strokeWidth="1.5" />
+                    <text x="135" y="80" textAnchor="middle" fill="#94a3b8" fontSize="6.5" fontFamily="monospace">
+                      SENS. ADJ
+                    </text>
+
+                    {/* Silkscreen Metadata */}
+                    <text x="145" y={height - 35} textAnchor="middle" fill="#38bdf8" fontSize="8" fontFamily="monospace" fontWeight="700">
+                      8-CH IR ARRAY
+                    </text>
+                    <text x="145" y={height - 20} textAnchor="middle" fill="#64748b" fontSize="6.5" fontFamily="monospace">
+                      QTR-8RC COMPATIBLE
                     </text>
                   </g>
                 )}

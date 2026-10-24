@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RobotPose } from '../robot/DifferentialDriveChassis';
+import { TrackEnvironment } from '../robot/TrackEnvironment';
 
 export class Robot3DViewport {
   private container: HTMLElement;
@@ -11,6 +12,11 @@ export class Robot3DViewport {
   private leftRearWheel!: THREE.Group;
   private rightFrontWheel!: THREE.Group;
   private rightRearWheel!: THREE.Group;
+
+  // Track & Floor Meshes
+  private trackMesh: THREE.Mesh | null = null;
+  private arenaMatMesh: THREE.Mesh | null = null;
+  private startLineMesh: THREE.Mesh | null = null;
 
   private isDragging = false;
   private previousMousePosition = { x: 0, y: 0 };
@@ -362,6 +368,124 @@ export class Robot3DViewport {
 
   public render() {
     this.renderer.render(this.scene, this.camera);
+  }
+
+  public rebuildTrack(track: TrackEnvironment) {
+    if (this.trackMesh) {
+      this.scene.remove(this.trackMesh);
+      this.trackMesh.geometry.dispose();
+      (this.trackMesh.material as THREE.Material).dispose();
+      this.trackMesh = null;
+    }
+    if (this.arenaMatMesh) {
+      this.scene.remove(this.arenaMatMesh);
+      this.arenaMatMesh.geometry.dispose();
+      (this.arenaMatMesh.material as THREE.Material).dispose();
+      this.arenaMatMesh = null;
+    }
+    if (this.startLineMesh) {
+      this.scene.remove(this.startLineMesh);
+      this.startLineMesh.geometry.dispose();
+      (this.startLineMesh.material as THREE.Material).dispose();
+      this.startLineMesh = null;
+    }
+
+    const polyline = track.getTrackPolyline();
+    if (!polyline || polyline.length < 2) {
+      this.render();
+      return;
+    }
+
+    // Build arena white mat (3.6m x 3.6m) centered on track
+    const matGeo = new THREE.PlaneGeometry(3.6, 3.6);
+    const matMat = new THREE.MeshStandardMaterial({
+      color: 0xf8fafc,
+      roughness: 0.6,
+      metalness: 0.05,
+    });
+    this.arenaMatMesh = new THREE.Mesh(matGeo, matMat);
+    this.arenaMatMesh.rotation.x = -Math.PI / 2;
+    this.arenaMatMesh.position.y = 0.001;
+    this.arenaMatMesh.receiveShadow = true;
+    this.scene.add(this.arenaMatMesh);
+
+    // Build track ribbon with counter-clockwise winding (normals pointing up +Y)
+    const lineWidth = track.getLineWidth();
+    const halfWidth = lineWidth / 2.0;
+    const isClosed = track.isTrackClosed();
+
+    const vertices: number[] = [];
+    const indices: number[] = [];
+    const numPoints = polyline.length;
+
+    for (let i = 0; i < numPoints; i++) {
+      const curr = polyline[i];
+      let prev = i === 0 ? (isClosed ? polyline[numPoints - 1] : polyline[0]) : polyline[i - 1];
+      let next = i === numPoints - 1 ? (isClosed ? polyline[0] : polyline[i]) : polyline[i + 1];
+
+      const dx = next.x - prev.x;
+      const dz = next.z - prev.z;
+      const len = Math.hypot(dx, dz) || 1;
+      const tx = dx / len;
+      const tz = dz / len;
+
+      const nx = -tz;
+      const nz = tx;
+
+      const yElev = 0.0028;
+      vertices.push(curr.x + nx * halfWidth, yElev, curr.z + nz * halfWidth); // v0 (left)
+      vertices.push(curr.x - nx * halfWidth, yElev, curr.z - nz * halfWidth); // v1 (right)
+
+      if (i < numPoints - 1) {
+        const v0 = i * 2;
+        const v1 = i * 2 + 1;
+        const v2 = (i + 1) * 2;
+        const v3 = (i + 1) * 2 + 1;
+
+        indices.push(v0, v2, v1);
+        indices.push(v1, v2, v3);
+      }
+    }
+
+    if (isClosed) {
+      const v0 = (numPoints - 1) * 2;
+      const v1 = (numPoints - 1) * 2 + 1;
+      const v2 = 0;
+      const v3 = 1;
+      indices.push(v0, v2, v1);
+      indices.push(v1, v2, v3);
+    }
+
+    const trackGeo = new THREE.BufferGeometry();
+    trackGeo.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    trackGeo.setIndex(indices);
+    trackGeo.computeVertexNormals();
+
+    const trackMat = new THREE.MeshStandardMaterial({
+      color: 0x090d16,
+      roughness: 0.9,
+      metalness: 0.1,
+      side: THREE.DoubleSide,
+      polygonOffset: true,
+      polygonOffsetFactor: -1.0,
+      polygonOffsetUnits: -4.0,
+    });
+
+    this.trackMesh = new THREE.Mesh(trackGeo, trackMat);
+    this.trackMesh.receiveShadow = true;
+    this.scene.add(this.trackMesh);
+
+    // High visibility start line indicator strip
+    const startPose = track.getStartPose();
+    const startLineGeo = new THREE.PlaneGeometry(lineWidth * 1.8, 0.016);
+    const startLineMat = new THREE.MeshBasicMaterial({ color: 0xef4444, side: THREE.DoubleSide });
+    this.startLineMesh = new THREE.Mesh(startLineGeo, startLineMat);
+    this.startLineMesh.rotation.x = -Math.PI / 2;
+    this.startLineMesh.rotation.z = -startPose.yawRad;
+    this.startLineMesh.position.set(startPose.x, 0.0032, startPose.z);
+    this.scene.add(this.startLineMesh);
+
+    this.render();
   }
 
   public resetCamera() {

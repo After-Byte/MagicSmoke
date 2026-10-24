@@ -10,6 +10,8 @@ describe('Hardware Component Schema & Manifest Validation (Issue #3)', () => {
     { name: 'N20 Motor', filePath: 'parts/actuators/n20-motor/part.json' },
     { name: '7.4V Battery Pack', filePath: 'parts/power/battery-pack-7v4/part.json' },
     { name: 'HC-SR04 Sensor', filePath: 'parts/sensors/hc-sr04/part.json' },
+    { name: 'Arduino Uno R3', filePath: 'parts/mcu/arduino-uno-r3/part.json' },
+    { name: '8-Channel IR Sensor Array', filePath: 'parts/sensors/ir-sensor-array-8ch/part.json' },
   ];
 
   for (const part of partsToTest) {

@@ -51,8 +51,8 @@ export const CircuitThumbnail: React.FC<CircuitThumbnailProps> = ({
   const compMap = new Map<string, ComponentInstance>();
   for (const c of components) {
     compMap.set(c.id, c);
-    const width = c.dimensions?.width ?? (c.type === 'ESP32_DEVKIT_V1' ? 200 : c.type === 'TB6612FNG' ? 180 : 140);
-    const height = c.dimensions?.height ?? (c.type === 'ESP32_DEVKIT_V1' ? 235 : c.type === 'TB6612FNG' ? 295 : 100);
+    const width = c.dimensions?.width ?? (c.type === 'ESP32_DEVKIT_V1' ? 200 : c.type === 'ARDUINO_UNO_R3' ? 220 : c.type === 'IR_SENSOR_ARRAY_8CH' ? 220 : c.type === 'TB6612FNG' ? 180 : 140);
+    const height = c.dimensions?.height ?? (c.type === 'ESP32_DEVKIT_V1' ? 235 : c.type === 'ARDUINO_UNO_R3' ? 350 : c.type === 'IR_SENSOR_ARRAY_8CH' ? 210 : c.type === 'TB6612FNG' ? 295 : 100);
     if (c.position.x < minX) minX = c.position.x;
     if (c.position.y < minY) minY = c.position.y;
     if (c.position.x + width > maxX) maxX = c.position.x + width;
@@ -435,6 +435,74 @@ export const CircuitThumbnail: React.FC<CircuitThumbnailProps> = ({
                   <circle cx={width - 36} cy="45" r="22" fill="#94a3b8" stroke="#cbd5e1" strokeWidth="2" />
                   <circle cx={width - 36} cy="45" r="14" fill="#475569" />
                   <text x={width / 2} y="22" textAnchor="middle" fill="#93c5fd" fontSize="7" fontFamily="monospace" fontWeight="700">HC-SR04</text>
+                </g>
+              )}
+
+              {comp.type === 'ARDUINO_UNO_R3' && (
+                <g>
+                  {/* Arduino Teal PCB Body */}
+                  <rect
+                    x="0"
+                    y="0"
+                    width={width}
+                    height={height}
+                    rx="6"
+                    fill="#005c5f"
+                    stroke="#00878f"
+                    strokeWidth="1.5"
+                  />
+                  {/* USB Port & Barrel Jack */}
+                  <rect x="8" y="10" width="28" height="30" rx="2" fill="#94a3b8" stroke="#475569" strokeWidth="1" />
+                  <rect x="8" y={height - 40} width="32" height="28" rx="2" fill="#0f172a" stroke="#1e293b" strokeWidth="1" />
+                  {/* ATmega328P DIP IC */}
+                  <rect x={width / 2 - 12} y="60" width="30" height="110" rx="3" fill="#18181b" stroke="#3f3f46" strokeWidth="1" />
+                  <text
+                    x={width / 2 + 3}
+                    y="115"
+                    textAnchor="middle"
+                    fill="#a1a1aa"
+                    fontSize="7"
+                    fontFamily="monospace"
+                    fontWeight="700"
+                    transform={`rotate(-90 ${width / 2 + 3} 115)`}
+                  >
+                    ATMEGA328P
+                  </text>
+                  <text x={width / 2} y={height - 25} textAnchor="middle" fill="#f8fafc" fontSize="9" fontFamily="sans-serif" fontWeight="800">
+                    ARDUINO
+                  </text>
+                  <text x={width / 2} y={height - 12} textAnchor="middle" fill="#67e8f9" fontSize="7" fontFamily="monospace" fontWeight="700">
+                    UNO R3
+                  </text>
+                </g>
+              )}
+
+              {comp.type === 'IR_SENSOR_ARRAY_8CH' && (
+                <g>
+                  {/* 8-Channel IR Sensor Array Bar */}
+                  <rect
+                    x="0"
+                    y="0"
+                    width={width}
+                    height={height}
+                    rx="4"
+                    fill="#0f172a"
+                    stroke="#334155"
+                    strokeWidth="1.2"
+                  />
+                  {/* 8 Sensor Cells */}
+                  {Array.from({ length: 8 }).map((_, i) => (
+                    <g key={i}>
+                      <circle cx="30" cy={20 + i * 19} r="3.5" fill="#1e3a8a" stroke="#3b82f6" strokeWidth="0.6" />
+                      <circle cx="44" cy={20 + i * 19} r="3.5" fill="#7f1d1d" stroke="#ef4444" strokeWidth="0.6" />
+                    </g>
+                  ))}
+                  <text x={width / 2 + 30} y="40" textAnchor="middle" fill="#38bdf8" fontSize="7.5" fontFamily="monospace" fontWeight="700">
+                    8-CH IR
+                  </text>
+                  <text x={width / 2 + 30} y="55" textAnchor="middle" fill="#64748b" fontSize="6.5" fontFamily="monospace">
+                    QTR-8RC
+                  </text>
                 </g>
               )}
 

@@ -237,6 +237,13 @@ export class ArduinoInterpreter {
     this.globalScope.set('true', true);
     this.globalScope.set('false', false);
     this.globalScope.set('LED_BUILTIN', 2);
+    // Standard Arduino analog pin constants (ATmega328P mapping)
+    this.globalScope.set('A0', 14);
+    this.globalScope.set('A1', 15);
+    this.globalScope.set('A2', 16);
+    this.globalScope.set('A3', 17);
+    this.globalScope.set('A4', 18);
+    this.globalScope.set('A5', 19);
   }
 
   /**
@@ -301,7 +308,7 @@ export class ArduinoInterpreter {
 
     // Initialize loop fiber
     if (this.loopFunction) {
-      this.loopFiber = new StatementFiber(this.loopFunction.body, new Map(this.globalScope));
+      this.loopFiber = new StatementFiber(this.loopFunction.body, new Map());
     }
   }
 
@@ -356,7 +363,7 @@ export class ArduinoInterpreter {
 
       if (!this.loopFiber || this.loopFiber.isFinished()) {
         // Restart loop() iteration
-        this.loopFiber = new StatementFiber(this.loopFunction.body, new Map(this.globalScope));
+        this.loopFiber = new StatementFiber(this.loopFunction.body, new Map());
       }
 
       const yieldReason = this.loopFiber.step(this, timeBudgetMs);
@@ -368,7 +375,8 @@ export class ArduinoInterpreter {
           break;
         }
       } else if (yieldReason.type === 'COMPLETED') {
-        // loop() completed one pass; will restart on next iteration
+        // loop() completed one pass; consume 1ms if loop had no delays
+        timeBudgetMs -= 1;
       }
     }
   }
@@ -463,7 +471,7 @@ export class ArduinoInterpreter {
 
   // --- Function Call Execution ---
   public executeFunction(fn: FunctionDef, argValues: any[]): any {
-    const localScope = new Map<string, any>(this.globalScope);
+    const localScope = new Map<string, any>();
 
     // Bind parameters
     fn.params.forEach((param, idx) => {

@@ -46,10 +46,10 @@ export class TB6612FNGDriver {
 
     // 1. Check Logic Power and Common Ground
     if (!circuitStatus.logicPowered) {
-      return this.unpoweredState('Logic VCC unpowered (connect ESP32 3.3V to TB6612 VCC).');
+      return this.unpoweredState('Logic VCC unpowered (connect MCU 3.3V/5V to TB6612 VCC).');
     }
     if (!circuitStatus.hasCommonGround) {
-      return this.unpoweredState('Common Ground missing or broken (connect ESP32 GND and Battery NEG to TB6612 GND).');
+      return this.unpoweredState('Common Ground missing or broken (connect MCU GND and Battery NEG to TB6612 GND).');
     }
 
     // 2. Read STBY pin state from connected net

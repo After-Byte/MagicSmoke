@@ -130,6 +130,29 @@ export class CircuitEngine {
       const current = queue.shift()!;
       results.push(current);
 
+      // Electrical internal buses (e.g. Ground Bus distribution strip & MCU ground planes)
+      const currentComp = this.components.get(current.compId);
+      if (currentComp) {
+        if (currentComp.type === 'GROUND_BUS') {
+          for (const busPinId of Object.keys(currentComp.pins)) {
+            if (!visited.has(keyFor(current.compId, busPinId))) {
+              visited.add(keyFor(current.compId, busPinId));
+              queue.push({ compId: current.compId, pinId: busPinId });
+            }
+          }
+        } else if (
+          currentComp.type === 'ARDUINO_UNO_R3' &&
+          (current.pinId === 'GND1' || current.pinId === 'GND2' || current.pinId === 'GND3')
+        ) {
+          for (const gPin of ['GND1', 'GND2', 'GND3']) {
+            if (!visited.has(keyFor(current.compId, gPin))) {
+              visited.add(keyFor(current.compId, gPin));
+              queue.push({ compId: current.compId, pinId: gPin });
+            }
+          }
+        }
+      }
+
       for (const wire of this.wires.values()) {
         let neighbor: { compId: string; pinId: string } | null = null;
         if (wire.fromComponentId === current.compId && wire.fromPinId === current.pinId) {
@@ -183,47 +206,84 @@ export class CircuitEngine {
     const errors: string[] = [];
     const warnings: string[] = [];
 
+    // Find active MCU, Driver, and Power components
+    const mcu = Array.from(this.components.values()).find(
+      (c) => c.type === 'ESP32_DEVKIT_V1' || c.type === 'ARDUINO_UNO_R3'
+    );
+    const tbDriver = Array.from(this.components.values()).find((c) => c.type === 'TB6612FNG');
+    const battery = Array.from(this.components.values()).find((c) => c.type === 'BATTERY_PACK');
+    const irSensor = Array.from(this.components.values()).find((c) => c.type === 'IR_SENSOR_ARRAY_8CH');
+
+    const tbId = tbDriver?.id || 'tb6612_1';
+    const battId = battery?.id || 'batt_1';
+    const mcuId = mcu?.id || 'esp32_1';
+
     // Find Ground net
-    const espGndConnected = this.getConnectedPins('esp32_1', 'GND');
-    const tbGndConnected = this.getConnectedPins('tb6612_1', 'GND');
-    const battGndConnected = this.getConnectedPins('batt_1', 'NEG');
+    // MCU ground pins: ESP32 has 'GND'; Uno has 'GND1', 'GND2', 'GND3'
+    const mcuGndPins = mcu?.type === 'ARDUINO_UNO_R3' ? ['GND1', 'GND2', 'GND3'] : ['GND'];
+    const tbGndConnected = this.getConnectedPins(tbId, 'GND');
+    const battGndConnected = this.getConnectedPins(battId, 'NEG');
 
-    const tbSharesEspGnd = espGndConnected.some((p) => p.compId === 'tb6612_1' && p.pinId === 'GND');
-    const tbSharesBattGnd = battGndConnected.some((p) => p.compId === 'tb6612_1' && p.pinId === 'GND');
-    const hasCommonGround = tbSharesEspGnd && tbSharesBattGnd;
+    const tbSharesMcuGnd = tbGndConnected.some((p) => p.compId === mcuId && mcuGndPins.includes(p.pinId));
+    const tbSharesBattGnd = battGndConnected.some((p) => p.compId === tbId && p.pinId === 'GND');
+    const hasCommonGround = tbSharesMcuGnd && tbSharesBattGnd;
 
-    if (!tbSharesEspGnd) {
-      warnings.push('TB6612FNG GND is not connected to ESP32 GND (missing common logic ground).');
+    if (!tbSharesMcuGnd) {
+      warnings.push(`TB6612FNG GND is not connected to ${mcu?.name || 'MCU'} GND (missing common logic ground).`);
     }
     if (!tbSharesBattGnd) {
       warnings.push('TB6612FNG GND is not connected to Battery GND (missing motor return ground).');
     }
 
-    // Check VCC (Logic Power)
-    const tbVccConnected = this.getConnectedPins('tb6612_1', 'VCC');
-    const logicPowered = tbVccConnected.some((p) => p.compId === 'esp32_1' && p.pinId === '3V3');
+    // Check VCC (Logic Power: 3.3V from ESP32 or 5V/3.3V from Arduino Uno)
+    const tbVccConnected = this.getConnectedPins(tbId, 'VCC');
+    const logicPowered = tbVccConnected.some(
+      (p) => p.compId === mcuId && (p.pinId === '3V3' || p.pinId === '5V')
+    );
     if (!logicPowered) {
-      warnings.push('TB6612FNG VCC is not connected to 3.3V (driver logic is unpowered).');
+      warnings.push(`TB6612FNG VCC is not connected to ${mcu?.type === 'ARDUINO_UNO_R3' ? '5V' : '3.3V'} (driver logic is unpowered).`);
     }
 
     // Check VM (Motor Power)
-    const tbVmConnected = this.getConnectedPins('tb6612_1', 'VM');
-    const motorPowered = tbVmConnected.some((p) => p.compId === 'batt_1' && p.pinId === 'POS');
+    const tbVmConnected = this.getConnectedPins(tbId, 'VM');
+    const motorPowered = tbVmConnected.some((p) => p.compId === battId && p.pinId === 'POS');
     if (!motorPowered) {
       warnings.push('TB6612FNG VM is not connected to Battery V+ (motors have no drive power).');
     }
 
+    // Check IR Sensor Array power & ground if present
+    if (irSensor) {
+      const irGndConnected = this.getConnectedPins(irSensor.id, 'GND');
+      const irSharesCommonGnd = irGndConnected.some(
+        (p) =>
+          (p.compId === mcuId && mcuGndPins.includes(p.pinId)) ||
+          (p.compId === tbId && p.pinId === 'GND') ||
+          (p.compId === battId && p.pinId === 'NEG')
+      );
+      if (!irSharesCommonGnd) {
+        warnings.push('8-Channel IR Sensor Array GND is not connected to common ground.');
+      }
+
+      const irVccConnected = this.getConnectedPins(irSensor.id, 'VCC');
+      const irHasPower = irVccConnected.some(
+        (p) => p.compId === mcuId && (p.pinId === '5V' || p.pinId === '3V3')
+      );
+      if (!irHasPower) {
+        warnings.push('8-Channel IR Sensor Array VCC is not connected to 5V power supply.');
+      }
+    }
+
     // Check Motor wiring
-    const ao1Connected = this.getConnectedPins('tb6612_1', 'AO1');
-    const ao2Connected = this.getConnectedPins('tb6612_1', 'AO2');
-    const motorAConnected = ao1Connected.some(p => p.compId === 'motor_left') && ao2Connected.some(p => p.compId === 'motor_left');
+    const ao1Connected = this.getConnectedPins(tbId, 'AO1');
+    const ao2Connected = this.getConnectedPins(tbId, 'AO2');
+    const motorAConnected = ao1Connected.some((p) => p.compId === 'motor_left') && ao2Connected.some((p) => p.compId === 'motor_left');
     if (!motorAConnected) {
       warnings.push('Left motor (AO1/AO2) leads are incomplete or disconnected.');
     }
 
-    const bo1Connected = this.getConnectedPins('tb6612_1', 'BO1');
-    const bo2Connected = this.getConnectedPins('tb6612_1', 'BO2');
-    const motorBConnected = bo1Connected.some(p => p.compId === 'motor_right') && bo2Connected.some(p => p.compId === 'motor_right');
+    const bo1Connected = this.getConnectedPins(tbId, 'BO1');
+    const bo2Connected = this.getConnectedPins(tbId, 'BO2');
+    const motorBConnected = bo1Connected.some((p) => p.compId === 'motor_right') && bo2Connected.some((p) => p.compId === 'motor_right');
     if (!motorBConnected) {
       warnings.push('Right motor (BO1/BO2) leads are incomplete or disconnected.');
     }

@@ -27,7 +27,7 @@ export class DifferentialDriveChassis {
     const v = (vRight + vLeft) / 2.0;
 
     // Angular rate of yaw rotation: (v_right - v_left) / L
-    const omega = (vRight - vLeft) / this.config.trackWidthMeters;
+    const omega = (vLeft - vRight) / this.config.trackWidthMeters;
 
     if (Math.abs(omega) < 1e-6) {
       // Straight line motion

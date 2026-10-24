@@ -1,11 +1,13 @@
 import { ComponentInstance } from './types';
 import {
   createESP32DevKit,
+  createArduinoUno,
   createTB6612FNG,
   createN20Motor,
   createBatteryPack,
   createGroundBus,
   createHCSR04Sensor,
+  createIRSensorArray8CH,
 } from './components';
 
 export type CatalogCategory = 'all' | 'mcu' | 'driver' | 'actuator' | 'power' | 'sensor' | 'passive';
@@ -28,6 +30,21 @@ export interface CatalogItem {
 
 export const COMPONENT_CATALOG: CatalogItem[] = [
   {
+    id: 'catalog_arduino_uno',
+    type: 'ARDUINO_UNO_R3',
+    name: 'Arduino Uno R3',
+    category: 'mcu',
+    description: 'ATmega328P 8-bit AVR RISC microcontroller board with 14 digital I/O pins (6 PWM), 6 analog inputs, and 16MHz crystal.',
+    specs: {
+      voltage: '5V Logic / 7-12V Vin',
+      interfaces: '14 GPIO (6 PWM), 6 ADC, UART, SPI, I2C',
+      dimensions: '220 × 350 px',
+    },
+    simulationStatus: 'fully_simulated',
+    instantiate: (customId, pos) =>
+      createArduinoUno(customId || `uno_${Date.now()}`, pos || { x: 50, y: 70 }),
+  },
+  {
     id: 'catalog_esp32',
     type: 'ESP32_DEVKIT_V1',
     name: 'ESP32 DevKit V1',
@@ -41,6 +58,22 @@ export const COMPONENT_CATALOG: CatalogItem[] = [
     simulationStatus: 'fully_simulated',
     instantiate: (customId, pos) =>
       createESP32DevKit(customId || `esp32_${Date.now()}`, pos || { x: 60, y: 80 }),
+  },
+  {
+    id: 'catalog_ir_array',
+    type: 'IR_SENSOR_ARRAY_8CH',
+    name: '8-Channel Digital IR Sensor Array',
+    category: 'sensor',
+    description: 'Precision 8-channel infrared reflectance array (TCRT5000/QTR-8RC compatible) for line following with active digital outputs.',
+    specs: {
+      voltage: '3.3V–5.0V VCC',
+      current: '100mA total IR array',
+      interfaces: '8 × Digital Channels (D1-D8), VCC, GND',
+      dimensions: '220 × 210 px',
+    },
+    simulationStatus: 'fully_simulated',
+    instantiate: (customId, pos) =>
+      createIRSensorArray8CH(customId || `ir_array_${Date.now()}`, pos || { x: 50, y: 440 }),
   },
   {
     id: 'catalog_tb6612fng',

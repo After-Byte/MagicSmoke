@@ -1,12 +1,14 @@
 import { ComponentInstance, WireConnection } from '../circuit/types';
+import { TrackData } from '../robot/TrackModel';
 
 export interface ProjectDocument {
   schemaVersion: '1.0.0';
   name: string;
-  board: 'esp32-devkit-v1';
+  board: 'esp32-devkit-v1' | 'arduino-uno-r3';
   code: string;
   components: ComponentInstance[];
   wires: WireConnection[];
+  track?: TrackData;
   simulationConfig?: {
     stepTimeSeconds?: number;
     nominalVoltage?: number;

@@ -4,6 +4,7 @@ import { Robot3DViewport } from './three/Robot3DViewport';
 import { CodeEditor } from './editor/CodeEditor';
 import { CircuitCanvas } from './circuit/CircuitCanvas';
 import { ConsolePanel } from './console/ConsolePanel';
+import { LineFollowerLab } from './lab/LineFollowerLab';
 import { DEFAULT_SKETCH, createDefaultProject } from './project/defaultProject';
 import { ProjectDocument, validateProjectDocument } from './project/types';
 import { ComponentInstance, WireConnection } from './circuit/types';
@@ -35,6 +36,7 @@ import {
   Save,
   Check,
   AlertTriangle,
+  Activity,
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -42,24 +44,41 @@ export const App: React.FC = () => {
   const viewportRef = useRef<Robot3DViewport | null>(null);
   const viewportContainerRef = useRef<HTMLDivElement>(null);
 
-  // Active View State: 'dashboard' vs 'editor'
-  const [currentView, setCurrentView] = useState<'dashboard' | 'editor'>(() => {
+  // Active View State: 'dashboard' vs 'editor' vs 'lab'
+  const [currentView, setCurrentView] = useState<'dashboard' | 'editor' | 'lab'>(() => {
     if (typeof window !== 'undefined') {
+      if (window.location.hash === '#lab' || window.location.search.includes('view=lab')) {
+        return 'lab';
+      }
       if (window.location.hash === '#editor' || window.location.search.includes('view=editor')) {
         return 'editor';
       }
       const saved = localStorage.getItem('magicsmoke_active_view');
-      return saved === 'editor' ? 'editor' : 'dashboard';
+      if (saved === 'lab' || saved === 'editor') return saved as any;
+      return 'dashboard';
     }
     return 'dashboard';
   });
 
   const [activeProject, setActiveProject] = useState<StoredProject | null>(() => {
+    const isLab =
+      typeof window !== 'undefined' &&
+      (window.location.hash === '#lab' ||
+        window.location.search.includes('view=lab') ||
+        localStorage.getItem('magicsmoke_active_view') === 'lab');
     const activeId = getActiveProjectId();
     const all = getAllStoredProjects();
     if (activeId) {
       const found = all.find((p) => p.id === activeId);
-      if (found) return found;
+      if (found) {
+        if (!isLab || found.id === 'starter_line_follower_robot' || found.document?.track) {
+          return found;
+        }
+      }
+    }
+    if (isLab) {
+      const lf = all.find((p) => p.id === 'starter_line_follower_robot' || p.name.includes('Line Follower'));
+      if (lf) return lf;
     }
     return all[0] || createStarter2WDRobot();
   });
@@ -217,8 +236,14 @@ export const App: React.FC = () => {
           viewportRef.current = null;
         }
         viewportRef.current = new Robot3DViewport(viewportContainerRef.current);
+        if (coordinatorRef.current && coordinatorRef.current.track) {
+          viewportRef.current.rebuildTrack(coordinatorRef.current.track);
+        }
       } else {
         viewportRef.current.handleResize();
+        if (coordinatorRef.current && coordinatorRef.current.track) {
+          viewportRef.current.rebuildTrack(coordinatorRef.current.track);
+        }
       }
 
       // Smooth handling across the 300ms CSS drawer width transition
@@ -333,10 +358,28 @@ export const App: React.FC = () => {
       coordinatorRef.current.loadProject(project.document);
       const evalRes = coordinatorRef.current.circuit.evaluateCircuit();
       setCircuitWarnings(evalRes.circuitWarnings);
+      if (viewportRef.current) {
+        viewportRef.current.rebuildTrack(coordinatorRef.current.track);
+      }
     }
     setIsDirty(false);
     setCurrentView('editor');
     localStorage.setItem('magicsmoke_active_view', 'editor');
+  };
+
+  const handleLaunchLineFollowerLab = (project?: StoredProject) => {
+    const all = getAllStoredProjects();
+    const target =
+      project ||
+      all.find((p) => p.id === 'starter_line_follower_robot' || p.id === 'starter_line_follower' || p.name.includes('Line Follower')) ||
+      all[0];
+    if (target) {
+      setActiveProject(target);
+      setActiveProjectId(target.id);
+      setCode(target.document.code);
+    }
+    setCurrentView('lab');
+    localStorage.setItem('magicsmoke_active_view', 'lab');
   };
 
   const handleSaveProject = () => {
@@ -427,6 +470,22 @@ export const App: React.FC = () => {
           setCurrentView('editor');
           localStorage.setItem('magicsmoke_active_view', 'editor');
         }}
+        onLaunchLineFollowerLab={handleLaunchLineFollowerLab}
+      />
+    );
+  }
+
+  if (currentView === 'lab') {
+    return (
+      <LineFollowerLab
+        initialProject={activeProject || undefined}
+        onBackToDashboard={() => {
+          setCurrentView('dashboard');
+          localStorage.setItem('magicsmoke_active_view', 'dashboard');
+        }}
+        onSaveProject={(savedProj) => {
+          setActiveProject(savedProj);
+        }}
       />
     );
   }
@@ -464,6 +523,17 @@ export const App: React.FC = () => {
               <span className="text-[10px] text-amber-400 font-mono italic" title="You have unsaved changes">
                 • unsaved
               </span>
+            )}
+            {(activeProject?.document?.board === 'arduino-uno-r3' || activeProject?.name.includes('Line Follower')) && (
+              <button
+                onClick={() => handleLaunchLineFollowerLab(activeProject || undefined)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#00f0ff]/15 hover:bg-[#00f0ff]/25 text-[#00f0ff] border border-[#00f0ff]/40 text-[11px] font-mono font-bold transition-all shadow-sm active:scale-95 ml-1.5"
+                title="Open in dedicated 3D Line Follower Simulation Lab"
+                data-testid="open-in-lab-btn"
+              >
+                <Activity size={11} />
+                <span>Open in Lab</span>
+              </button>
             )}
           </div>
         </div>

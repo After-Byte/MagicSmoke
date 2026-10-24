@@ -1,7 +1,10 @@
 import { ProjectDocument, validateProjectDocument } from './types';
 import { createDefaultProject, DEFAULT_SKETCH, CANONICAL_PIN_MAPPING } from './defaultProject';
+import { createStarterLineFollower } from './lineFollowerProject';
 import { createESP32DevKit, createTB6612FNG, createBatteryPack, createN20Motor } from '../circuit/components';
 import { WireConnection } from '../circuit/types';
+
+export { createStarterLineFollower } from './lineFollowerProject';
 
 export interface StoredProject {
   id: string;
@@ -134,15 +137,19 @@ export function getAllStoredProjects(): StoredProject[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const initial = [createStarter2WDRobot(), createStarterDualMotorBench(), createStarterMinimalESP32()];
+      const initial = [createStarterLineFollower(), createStarter2WDRobot(), createStarterDualMotorBench(), createStarterMinimalESP32()];
       saveAllStoredProjects(initial);
       return initial;
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      const initial = [createStarter2WDRobot(), createStarterDualMotorBench(), createStarterMinimalESP32()];
+      const initial = [createStarterLineFollower(), createStarter2WDRobot(), createStarterDualMotorBench(), createStarterMinimalESP32()];
       saveAllStoredProjects(initial);
       return initial;
+    }
+    if (!parsed.some((p: StoredProject) => p.id === 'starter_line_follower_robot')) {
+      parsed.unshift(createStarterLineFollower());
+      saveAllStoredProjects(parsed);
     }
     return parsed;
   } catch (e) {
