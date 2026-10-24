@@ -1,238 +1,135 @@
-<p align="center">
-  <img src="MagicSmoke%20Logo1.png" alt="MagicSmoke logo" width="220" />
-</p>
+<div align="center">
+  <img src="MagicSmoke%20Logo1.png" alt="MagicSmoke — Electronics and Robotics Simulation" width="100%" />
 
-<h1 align="center">MagicSmoke</h1>
+  <h1>MagicSmoke</h1>
 
-<p align="center">
-  <strong>Wire it. Code it. Watch it move.</strong>
-</p>
+  <p><strong>Wire it. Code it. Watch it move.</strong></p>
 
-<p align="center">
-  An open-source playground for electronics, embedded systems, and robotics simulation.
-</p>
+  <p>An open-source playground for electronics, embedded systems, and 3D robotics simulation.</p>
 
-<p align="center">
-  <a href="#vision">Vision</a> ·
-  <a href="#current-capabilities">Capabilities</a> ·
-  <a href="#roadmap">Roadmap</a> ·
-  <a href="#getting-started">Getting Started</a> ·
-  <a href="#contributing">Contributing</a>
-</p>
+  <p>
+    <a href="#vision">Vision</a> ·
+    <a href="#features">Features</a> ·
+    <a href="#roadmap">Roadmap</a> ·
+    <a href="#getting-started">Getting Started</a> ·
+    <a href="#contributing">Contributing</a>
+  </p>
 
-<p align="center">
-  <img src="https://img.shields.io/badge/status-early%20development-orange" alt="Early development" />
-  <img src="https://img.shields.io/badge/license-MIT-blue" alt="MIT License" />
-  <img src="https://img.shields.io/badge/built%20with-TypeScript-3178C6" alt="TypeScript" />
-  <img src="https://img.shields.io/badge/contributions-welcome-brightgreen" alt="Contributions welcome" />
-</p>
+  ![Status](https://img.shields.io/badge/status-early_development-orange)
+  ![License](https://img.shields.io/badge/license-MIT-blue)
+  ![Built with TypeScript](https://img.shields.io/badge/built_with-TypeScript-3178C6?logo=typescript&logoColor=white)
+</div>
 
 ---
-
-## What is MagicSmoke?
-
-Building a robot shouldn't require jumping between five different tools just to find out whether your idea works.
-
-You might design a circuit in one application, write firmware in another, simulate robot movement somewhere else, and then spend hours trying to understand why everything behaves differently when connected together.
-
-**MagicSmoke aims to bring electronics, embedded programming, and 3D robotics simulation into one workspace.**
-
-Build a circuit. Connect sensors and actuators. Write code. Run a simulation. Observe how your hardware and robot interact with the world.
-
-The goal is to make experimentation with robotics more accessible, more visual, and more connected to the way real hardware works.
-
-MagicSmoke is under active development. Its current capabilities are an initial foundation for this larger vision.
 
 ## Vision
 
-### One workspace. From circuit to robot.
+Building a robot shouldn't require jumping between different tools just to test an idea.
 
-MagicSmoke is being designed around the idea that a robot is more than a 3D model.
+MagicSmoke aims to bring **circuit design, embedded programming, and interactive 3D robotics simulation into one workspace**.
 
-Its behavior emerges from the interaction between electrical connections, embedded code, sensors, actuators, and the physical environment.
+Design a circuit, write code, connect hardware, and eventually watch your virtual robot respond to its environment—all in one place.
 
-We want to bring these pieces together.
+## Features
 
-### Electronics that matter
+MagicSmoke is actively evolving. Current implementations and future ambitions are intentionally separated.
 
-A circuit should be more than a collection of connected lines.
+- **Circuit editor** — Build circuits by connecting electronic components.
+- **Code workspace** — Write embedded-style code within the project.
+- **3D visualization** — Explore simulated hardware and robot assemblies.
+- **Hardware modeling** — Develop component definitions and behavioral models.
+- **Robotics simulation** — Work toward connecting firmware, sensors, motors, and robot movement.
 
-Pin assignments, voltage compatibility, power rails, common grounds, and peripheral capabilities should influence whether a simulated system works.
-
-The long-term goal is to make circuit construction meaningful rather than simply visual.
-
-### A world that responds
-
-Sensors should eventually interact with the simulated environment.
-
-An ultrasonic sensor should measure the distance to an object. A robot should respond to its motor-control signals. Its movement should depend on its controller and the behavior of its simulated hardware.
-
-Instead of treating electronics and 3D simulation as separate experiences, MagicSmoke aims to connect them.
-
-### An open, extensible hardware library
-
-No simulator can include every component.
-
-MagicSmoke aims to make adding hardware straightforward through reusable component definitions, 3D models, pin descriptions, and behavioral implementations.
-
-The community should be able to extend the simulator without needing to rewrite its core engine for every new sensor or module.
-
-### Built for learning and experimentation
-
-Whether you're building your first Arduino project, experimenting with embedded systems, or developing a robotics prototype, MagicSmoke aims to provide a place to test ideas before committing to physical hardware.
-
-The long-term ambition is to make the journey from a circuit diagram to a moving robot feel like one continuous process.
-
----
-
-## Current capabilities
-
-MagicSmoke is in early development. The following describes the implementation currently represented in the codebase, not a claim that every part of the complete vision is finished.
-
-### Circuit editor
-
-- Interactive circuit workspace with draggable components.
-- Pin-to-pin wiring and wire deletion.
-- Canvas panning and zooming.
-- Circuit connectivity evaluation through a netlist.
-- Initial electrical checks for missing common grounds and unpowered motor-driver supplies.
-
-### Embedded code workspace
-
-- Monaco-based code editor.
-- Initial ESP32-oriented behavioral runtime for a supported subset of Arduino-style C++.
-- Support for selected GPIO operations, PWM output, serial output, and asynchronous execution.
-- Runtime abstraction intended to support additional execution backends in the future.
-
-**Important:** The existing behavioral runtime is not equivalent to executing arbitrary firmware on a complete emulated microcontroller. Check the runtime implementation for the currently supported operations and limitations.
-
-### Motors and robotics
-
-- Initial TB6612FNG dual H-bridge driver model.
-- N20 motor behavior with acceleration and deceleration damping.
-- Differential-drive robot kinematics.
-- A Three.js-based 3D viewport with an initial procedural robot and hardware representation.
-
-### Integrated workbench
-
-- Code editor and circuit workspace.
-- Expandable 3D simulation viewport.
-- Diagnostics interface.
-- Responsive layouts for narrower screens.
-
-These capabilities establish the foundation for connecting circuit construction, code execution, and robot behavior more closely.
-
----
+> Not every capability is fully implemented. Hardware coverage, firmware compatibility, and simulation accuracy are still evolving.
 
 ## Roadmap
 
-The roadmap describes the direction of the project. Items are goals, not promises that the features already exist or have a fixed delivery date.
+### 01 — A reliable foundation
+- Improve circuit wiring and component interactions.
+- Establish consistent project state management.
+- Add automated tests for critical workflows.
+- Refine the workbench UI and error handling.
 
-### Phase 1 — Build a reliable foundation
+### 02 — A growing hardware library
+- Add sensors, actuators, and board definitions.
+- Document GPIO capabilities and electrical constraints.
+- Standardize component models for community contributions.
 
-**Focus: correctness, architecture, and developer experience.**
+### 03 — Connected code and simulation
+- Connect GPIO and PWM output to simulated hardware.
+- Integrate sensor readings with firmware behavior.
+- Improve motor control and robot movement.
+- Expand simulation testing and runtime capabilities.
 
-- [ ] Improve circuit wiring interactions and connection reliability.
-- [ ] Establish a consistent project-state model.
-- [ ] Expand automated tests for critical workflows.
-- [ ] Improve error reporting and simulation lifecycle handling.
-- [ ] Document the architecture and development workflow.
-- [ ] Improve the workbench's visual consistency and usability.
+### 04 — Richer robotics environments
+- Introduce interactive environments and obstacles.
+- Improve collision handling and physics.
+- Explore navigation, path planning, and autonomous behavior.
 
-### Phase 2 — Expand the hardware library
+### 05 — An open simulation ecosystem
+- Add project saving, loading, and sharing.
+- Support extensible component libraries.
+- Improve documentation and contributor workflows.
+- Explore additional microcontroller runtimes.
 
-**Focus: reusable components and accurate hardware definitions.**
+*This roadmap is directional; priorities may change as the project develops.*
 
-- [ ] Establish a consistent schema for hardware components.
-- [ ] Add documented pin capabilities for supported microcontrollers.
-- [ ] Expand the library of sensors, actuators, and modules.
-- [ ] Improve electrical compatibility validation.
-- [ ] Standardize component metadata and 3D asset conventions.
-- [ ] Make it easier for contributors to add and validate new components.
-
-### Phase 3 — Connect code, circuits, and simulation
-
-**Focus: meaningful interaction between simulated hardware and software.**
-
-- [ ] Strengthen the interface between firmware execution and simulated hardware.
-- [ ] Connect supported GPIO and PWM operations to circuit behavior.
-- [ ] Connect simulated sensor readings to supported programs.
-- [ ] Improve motor-driver and actuator integration.
-- [ ] Validate the complete code-to-hardware-to-robot workflow.
-- [ ] Expand runtime capabilities based on a clearly documented execution model.
-
-### Phase 4 — Build richer robotics environments
-
-**Focus: interactive worlds and more capable robots.**
-
-- [ ] Introduce configurable environments and obstacles.
-- [ ] Improve sensor interaction with the simulated world.
-- [ ] Expand robot configurations and actuator models.
-- [ ] Improve collision handling and physical behavior.
-- [ ] Support more sophisticated robotics experiments.
-- [ ] Explore navigation, path planning, and autonomous behavior workflows.
-
-### Phase 5 — Make projects shareable and extensible
-
-**Focus: collaboration and long-term usability.**
-
-- [ ] Implement reliable project saving and restoration.
-- [ ] Establish versioned project serialization.
-- [ ] Improve project import and export workflows.
-- [ ] Create a documented component contribution process.
-- [ ] Explore community-contributed hardware and robot libraries.
-- [ ] Investigate additional firmware execution backends where practical.
-
-The roadmap will evolve as the project develops, technical constraints become clearer, and contributors help identify the most valuable next steps.
-
----
-
-## Architecture
-
-MagicSmoke is built with TypeScript and uses a modular approach to separate the workbench, circuit evaluation, runtime, robot behavior, and 3D rendering.
-
-The current implementation includes the following major areas:
-
-| Area | Responsibility |
-|---|---|
-| `src/` | Application and workbench implementation |
-| `src/project/` | Default project configuration |
-| `src/runtime/` | Firmware runtime abstractions and behavioral execution |
-| `src/circuit/` | Circuit connectivity, netlist evaluation, and electrical rules |
-| `src/robot/` | Motor behavior and robot kinematics |
-| `src/three/` | Three.js rendering and 3D viewport |
-| `parts/` | Hardware component definitions and associated assets, where implemented |
-
-Example component structure:
-
-```text
-parts/
-└── sensors/
-    └── hc-sr04/
-        ├── mesh.glb
-        ├── part.json
-        └── behavior.ts
-```
-
-This illustrates the intended component organization. The exact files and requirements should be checked against the component implementation and contribution guidelines before adding new parts.
-
-The architectural goal is to keep hardware definitions modular, make simulation behavior testable, and allow new components to be introduced without unnecessary changes to unrelated parts of the application.
-
----
-
-## Getting started
+## Getting Started
 
 ### Prerequisites
 
-- Node.js 18 or later.
-- npm.
-- A modern browser with WebGL support.
-
-The project has also been tested with newer Node.js and npm versions.
+- Node.js 18 or later
+- npm
 
 ### Installation
 
-Clone the repository:
+```bash
+git clone https://github.com/After-Byte/MagicSmoke.git
+cd MagicSmoke
+npm install
+npm run dev
+```
+
+Open the local URL printed in your terminal, typically `http://localhost:5173`.
+
+### Testing
 
 ```bash
-git clone https://github.com/After
+npm run test
+npx playwright test
+```
+
+Some features and tests may still be under development.
+
+## Project Architecture
+
+MagicSmoke is built with TypeScript and a modular architecture intended to bring together:
+
+- **Workbench UI** — Circuit editing and code authoring.
+- **Circuit engine** — Connections, electrical checks, and signal evaluation.
+- **Runtime layer** — Firmware-style execution and hardware interaction.
+- **3D engine** — Hardware visualization and robot behavior.
+
+The architecture is evolving alongside the simulator. Runtime behavior should not be assumed to provide complete emulation of physical microcontrollers.
+
+## Contributing
+
+MagicSmoke is open source, and contributions are welcome!
+
+You can help by:
+- Reporting bugs and suggesting features.
+- Adding component definitions and hardware models.
+- Improving documentation and automated tests.
+- Contributing to the circuit engine, runtime, or 3D simulation.
+
+Please open an issue before starting substantial changes so we can discuss the approach.
+
+## Project Status
+
+**Early development — experimental software.**
+
+Expect incomplete features, changing APIs, and simulation limitations. Feedback and contributions will help shape the project.
+
+## License
+
+MagicSmoke is released under the [MIT License](LICENSE).
