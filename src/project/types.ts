@@ -1,5 +1,6 @@
 import { ComponentInstance, WireConnection } from '../circuit/types';
 import { TrackData } from '../robot/TrackModel';
+import { RobotArmData } from '../robot/arm/RobotArmModel';
 
 export interface ProjectDocument {
   schemaVersion: '1.0.0';
@@ -9,6 +10,7 @@ export interface ProjectDocument {
   components: ComponentInstance[];
   wires: WireConnection[];
   track?: TrackData;
+  robotArm?: RobotArmData;
   simulationConfig?: {
     stepTimeSeconds?: number;
     nominalVoltage?: number;

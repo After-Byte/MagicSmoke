@@ -169,3 +169,67 @@ export function createHCSR04Sensor(id = 'sonar_1', pos = { x: 620, y: 380 }): Co
     },
   };
 }
+
+export function createSG90Servo(id = 'servo_sg90_1', name = 'SG90 Micro Servo', pos = { x: 580, y: 70 }): ComponentInstance {
+  return {
+    id,
+    type: 'SERVO_SG90',
+    name,
+    position: pos,
+    dimensions: { width: 140, height: 100 },
+    pins: {
+      'SIG': { id: 'SIG', name: 'SIG (Orange)', type: PinType.DIGITAL_INPUT, description: 'PWM Signal Input (50Hz / 1-2ms pulse)', offset: { x: 0, y: 35 } },
+      'VCC': { id: 'VCC', name: 'VCC (Red)', type: PinType.POWER_VCC, description: 'Power Supply Input (4.8V-6.0V)', nominalVoltage: 5.0, offset: { x: 0, y: 60 } },
+      'GND': { id: 'GND', name: 'GND (Brown)', type: PinType.GROUND, description: 'Ground Reference (0V)', nominalVoltage: 0, offset: { x: 0, y: 85 } },
+    },
+  };
+}
+
+export function createMG996RServo(id = 'servo_mg996r_1', name = 'MG996R Metal Gear Servo', pos = { x: 580, y: 200 }): ComponentInstance {
+  return {
+    id,
+    type: 'SERVO_MG996R',
+    name,
+    position: pos,
+    dimensions: { width: 150, height: 110 },
+    pins: {
+      'SIG': { id: 'SIG', name: 'SIG (White)', type: PinType.DIGITAL_INPUT, description: 'PWM Signal Input (50Hz / 1-2ms pulse)', offset: { x: 0, y: 40 } },
+      'VCC': { id: 'VCC', name: 'VCC (Red)', type: PinType.POWER_VCC, description: 'High-Torque Power Supply (5V-7.2V)', nominalVoltage: 6.0, offset: { x: 0, y: 65 } },
+      'GND': { id: 'GND', name: 'GND (Black)', type: PinType.GROUND, description: 'Common Ground (0V)', nominalVoltage: 0, offset: { x: 0, y: 90 } },
+    },
+  };
+}
+
+export function createServoPowerSupply(id = 'servo_psu_1', pos = { x: 340, y: 440 }): ComponentInstance {
+  return {
+    id,
+    type: 'SERVO_POWER_SUPPLY',
+    name: '5V/6V 3A DC Servo PSU',
+    position: pos,
+    dimensions: { width: 160, height: 100 },
+    pins: {
+      'POS': { id: 'POS', name: 'VOUT (+6V)', type: PinType.POWER_VCC, description: 'Regulated Servo Power Rail (+6V 3A)', nominalVoltage: 6.0, offset: { x: 160, y: 40 } },
+      'NEG': { id: 'NEG', name: 'GND (-)', type: PinType.GROUND, description: 'Power Supply DC Return (0V)', nominalVoltage: 0, offset: { x: 160, y: 75 } },
+    },
+  };
+}
+
+export function createBreadboardMini(id = 'bb_mini_1', pos = { x: 340, y: 560 }): ComponentInstance {
+  return {
+    id,
+    type: 'BREADBOARD',
+    name: 'Mini Solderless Breadboard',
+    position: pos,
+    dimensions: { width: 180, height: 100 },
+    pins: {
+      'VCC1': { id: 'VCC1', name: '+ Rail', type: PinType.POWER_VCC, description: 'Positive Power Distribution Bus', nominalVoltage: 5.0, offset: { x: 30, y: 25 } },
+      'VCC2': { id: 'VCC2', name: '+ Rail', type: PinType.POWER_VCC, description: 'Positive Power Distribution Bus', nominalVoltage: 5.0, offset: { x: 70, y: 25 } },
+      'VCC3': { id: 'VCC3', name: '+ Rail', type: PinType.POWER_VCC, description: 'Positive Power Distribution Bus', nominalVoltage: 5.0, offset: { x: 110, y: 25 } },
+      'VCC4': { id: 'VCC4', name: '+ Rail', type: PinType.POWER_VCC, description: 'Positive Power Distribution Bus', nominalVoltage: 5.0, offset: { x: 150, y: 25 } },
+      'GND1': { id: 'GND1', name: '- Rail', type: PinType.GROUND, description: 'Common Ground Return Bus', nominalVoltage: 0, offset: { x: 30, y: 75 } },
+      'GND2': { id: 'GND2', name: '- Rail', type: PinType.GROUND, description: 'Common Ground Return Bus', nominalVoltage: 0, offset: { x: 70, y: 75 } },
+      'GND3': { id: 'GND3', name: '- Rail', type: PinType.GROUND, description: 'Common Ground Return Bus', nominalVoltage: 0, offset: { x: 110, y: 75 } },
+      'GND4': { id: 'GND4', name: '- Rail', type: PinType.GROUND, description: 'Common Ground Return Bus', nominalVoltage: 0, offset: { x: 150, y: 75 } },
+    },
+  };
+}

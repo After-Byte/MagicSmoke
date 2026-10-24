@@ -43,7 +43,11 @@ export interface ComponentInstance {
     | 'GROUND_BUS'
     | 'HC_SR04'
     | 'ARDUINO_UNO_R3'
-    | 'IR_SENSOR_ARRAY_8CH';
+    | 'IR_SENSOR_ARRAY_8CH'
+    | 'SERVO_SG90'
+    | 'SERVO_MG996R'
+    | 'SERVO_POWER_SUPPLY'
+    | 'BREADBOARD';
   name: string;
   position: { x: number; y: number };
   pins: Record<string, PinDefinition>;

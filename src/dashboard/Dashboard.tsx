@@ -7,7 +7,6 @@ import {
   deleteStoredProject,
   renameStoredProject,
   createNewBlankCircuit,
-  getActiveProjectId,
 } from '../project/projectStorage';
 import { validateProjectDocument } from '../project/types';
 import { CircuitThumbnail } from './CircuitThumbnail';
@@ -16,10 +15,10 @@ import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardHeroBanner } from './DashboardHeroBanner';
 import { DashboardWhatsNewCarousel } from './DashboardWhatsNewCarousel';
 import { DashboardRecentCarousel } from './DashboardRecentCarousel';
+import { AtmosphericBackground } from './textures/AtmosphericBackground';
 import {
   Cpu,
   Plus,
-  Search,
   SlidersHorizontal,
   Clock,
   Layers,
@@ -32,6 +31,7 @@ import {
   Sparkles,
   AlertTriangle,
   Play,
+  Terminal,
 } from 'lucide-react';
 
 interface DashboardProps {
@@ -39,6 +39,7 @@ interface DashboardProps {
   hasActiveSession?: boolean;
   onReturnToEditor?: () => void;
   onLaunchLineFollowerLab?: (project?: StoredProject) => void;
+  onLaunchRobotArmLab?: (project?: StoredProject) => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({
@@ -46,6 +47,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
   hasActiveSession,
   onReturnToEditor,
   onLaunchLineFollowerLab,
+  onLaunchRobotArmLab,
 }) => {
   const [projects, setProjects] = useState<StoredProject[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,9 +182,28 @@ export const Dashboard: React.FC<DashboardProps> = ({
     }
   };
 
+  const handleLaunchRobotArm = (project?: StoredProject) => {
+    const armProject =
+      project ||
+      projects.find(
+        (p) =>
+          p.id === 'starter_servo_robot_arm' ||
+          Boolean(p.document?.robotArm) ||
+          p.name.includes('Robot Arm')
+      );
+    if (onLaunchRobotArmLab) {
+      onLaunchRobotArmLab(armProject);
+    } else if (armProject) {
+      onOpenProject(armProject);
+    }
+  };
+
   return (
-    <div className="dashboard-shell flex flex-col w-screen h-screen font-sans overflow-hidden select-none">
-      {/* Refined Global Top Navbar */}
+    <div className="dashboard-shell relative flex flex-col w-screen h-screen font-sans overflow-hidden select-none bg-[#07081e] text-[#d5d4fc]">
+      {/* 1. Atmospheric Digital Noise & CRT Scanline Background matching Image 2 */}
+      <AtmosphericBackground />
+
+      {/* 2. Top Control Console Navbar */}
       <DashboardTopNavbar
         onNavigateHome={() => {
           setFilterTab('all');
@@ -190,6 +211,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
         }}
         onCreateNewCircuit={handleCreateNew}
         onLaunchLineFollowerLab={() => handleLaunchLineFollower()}
+        onLaunchRobotArmLab={() => handleLaunchRobotArm()}
         onImportJSON={handleImportFile}
         hasActiveSession={hasActiveSession}
         onReturnToEditor={onReturnToEditor}
@@ -198,14 +220,16 @@ export const Dashboard: React.FC<DashboardProps> = ({
         onSelectCategory={(cat) => setFilterTab(cat)}
       />
 
-      {/* Main Workspace Layout: Collapsible Sidebar + Scrollable Center Area */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left Sidebar */}
+      {/* 3. Main Workspace: Vertical Navigation Rail + Center Stage */}
+      <div className="flex flex-1 overflow-hidden relative z-10">
+        {/* Left Sidebar Rail */}
         <DashboardSidebar
           activeTab={filterTab}
           onTabChange={(tab) => {
             if (tab === 'lab') {
               handleLaunchLineFollower();
+            } else if (tab === 'arm') {
+              handleLaunchRobotArm();
             } else {
               setFilterTab(tab);
             }
@@ -217,11 +241,11 @@ export const Dashboard: React.FC<DashboardProps> = ({
           }}
         />
 
-        {/* Scrollable Center Content Area */}
+        {/* Scrollable Center Content Area with Electric-Yellow Scrollbar */}
         <main className="flex-1 overflow-y-auto px-4 sm:px-8 py-8 max-w-[1440px] mx-auto w-full">
           {!searchQuery.trim() && (
             <>
-              {/* Engineering Spotlight / Hero Banner */}
+              {/* Featured System 04 Hero Banner */}
               <DashboardHeroBanner
                 onLaunchLineFollowerLab={() => handleLaunchLineFollower()}
                 onCreateNewCircuit={handleCreateNew}
@@ -236,47 +260,50 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 }}
               />
 
-              {/* What's New Carousel */}
+              {/* What's New in MagicSmoke Signal Log Carousel */}
               <DashboardWhatsNewCarousel
                 onLaunchLineFollowerLab={() => handleLaunchLineFollower()}
+                onLaunchRobotArmLab={() => handleLaunchRobotArm()}
               />
 
-              {/* Recent Designs Carousel (Live Data from projectStorage) */}
+              {/* Recent Designs Workspace Archive Carousel */}
               <DashboardRecentCarousel
                 projects={projects}
                 onOpenProject={onOpenProject}
                 onLaunchLineFollowerLab={onLaunchLineFollowerLab}
+                onLaunchRobotArmLab={handleLaunchRobotArm}
                 onCreateNewCircuit={handleCreateNew}
               />
             </>
           )}
 
-          {/* All Projects Section Header & Controls */}
+          {/* Circuit Projects Section Header & Controls */}
           <section className="mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#e2e8f0]">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#212354]">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <h3 className="dashboard-section-title text-xl font-black tracking-tight">
-                    Circuit Projects
+                <div className="flex items-center gap-3 mb-1">
+                  <h3 className="text-xl font-black tracking-tight text-white font-mono flex items-center gap-2">
+                    <Terminal size={18} className="text-[#fff000]" />
+                    <span>Circuit Projects</span>
                   </h3>
-                  <span className="text-xs font-mono font-medium text-[#64748b] bg-[#f1f5f9] px-2.5 py-0.5 rounded-full border border-[#e2e8f0]">
+                  <span className="text-[10px] font-mono font-bold text-[#fff000] bg-[#07081e] px-2.5 py-0.5 border border-[#fff000]">
                     {projects.length} Total
                   </span>
                 </div>
-                <p className="text-xs text-[#64748b]">
+                <p className="text-xs font-mono text-[#8b8ac4]">
                   Interactive schematic capture, component wiring, firmware editor, and physical robotics simulation.
                 </p>
               </div>
 
               {/* Stats Counters */}
               <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono">
-                <div className="px-3 py-1.5 rounded-xl bg-white border border-[#e2e8f0] shadow-xs flex items-center gap-2">
-                  <span className="text-[10px] text-[#64748b] uppercase">Parts</span>
-                  <span className="text-[#1677ff] font-bold">{totalParts}</span>
+                <div className="px-3 py-1.5 bg-[#0c0d30] border border-[#212354] flex items-center gap-2">
+                  <span className="text-[10px] text-[#8b8ac4] uppercase">Parts</span>
+                  <span className="text-[#00f0ff] font-bold">{totalParts}</span>
                 </div>
-                <div className="px-3 py-1.5 rounded-xl bg-white border border-[#e2e8f0] shadow-xs flex items-center gap-2">
-                  <span className="text-[10px] text-[#64748b] uppercase">Wires</span>
-                  <span className="text-emerald-600 font-bold">{totalWires}</span>
+                <div className="px-3 py-1.5 bg-[#0c0d30] border border-[#212354] flex items-center gap-2">
+                  <span className="text-[10px] text-[#8b8ac4] uppercase">Wires</span>
+                  <span className="text-[#fff000] font-bold">{totalWires}</span>
                 </div>
               </div>
             </div>
@@ -285,14 +312,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Filter Tabs & Sort Controls Toolbar */}
           <section className="mb-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
-              {/* Filter Tabs */}
-              <div className="flex items-center bg-white p-1 rounded-xl border border-[#e2e8f0] text-xs font-medium shadow-xs">
+              {/* Filter Tabs matching Image 2 */}
+              <div className="flex items-center bg-[#0c0d30] p-1 border border-[#212354] text-xs font-mono">
                 <button
                   onClick={() => setFilterTab('all')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 transition-all cursor-pointer font-bold ${
                     filterTab === 'all'
-                      ? 'bg-[#1677ff] text-white font-bold shadow-xs'
-                      : 'text-[#64748b] hover:text-[#172033]'
+                      ? 'bg-[#fff000] text-[#07081e] shadow-sm'
+                      : 'text-[#8b8ac4] hover:text-[#fff000]'
                   }`}
                   data-testid="filter-tab-all"
                 >
@@ -300,10 +327,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterTab('custom')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 transition-all cursor-pointer font-bold ${
                     filterTab === 'custom'
-                      ? 'bg-[#1677ff] text-white font-bold shadow-xs'
-                      : 'text-[#64748b] hover:text-[#172033]'
+                      ? 'bg-[#fff000] text-[#07081e] shadow-sm'
+                      : 'text-[#8b8ac4] hover:text-[#fff000]'
                   }`}
                   data-testid="filter-tab-custom"
                 >
@@ -311,10 +338,10 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 </button>
                 <button
                   onClick={() => setFilterTab('starters')}
-                  className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer ${
+                  className={`px-3.5 py-1.5 transition-all cursor-pointer font-bold ${
                     filterTab === 'starters'
-                      ? 'bg-[#1677ff] text-white font-bold shadow-xs'
-                      : 'text-[#64748b] hover:text-[#172033]'
+                      ? 'bg-[#fff000] text-[#07081e] shadow-sm'
+                      : 'text-[#8b8ac4] hover:text-[#fff000]'
                   }`}
                   data-testid="filter-tab-starters"
                 >
@@ -324,17 +351,17 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
               {/* Sort Selector Dropdown */}
               <div className="flex items-center gap-2">
-                <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-xl border border-[#e2e8f0] text-xs font-mono text-[#64748b] shadow-xs">
-                  <SlidersHorizontal size={13} className="text-[#94a3b8]" />
+                <div className="flex items-center gap-1.5 bg-[#0c0d30] px-3 py-1.5 border border-[#212354] text-xs font-mono text-[#8b8ac4]">
+                  <SlidersHorizontal size={13} className="text-[#fff000]" />
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="bg-transparent text-xs text-[#172033] outline-hidden cursor-pointer font-sans"
+                    className="bg-transparent text-xs text-[#d5d4fc] outline-none cursor-pointer font-mono"
                     data-testid="dashboard-sort-select"
                   >
-                    <option value="modified">Recently Modified</option>
-                    <option value="title">Title (A-Z)</option>
-                    <option value="created">Date Created</option>
+                    <option value="modified" className="bg-[#0c0d30]">Recently Modified</option>
+                    <option value="title" className="bg-[#0c0d30]">Title (A-Z)</option>
+                    <option value="created" className="bg-[#0c0d30]">Date Created</option>
                   </select>
                 </div>
               </div>
@@ -344,14 +371,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
           {/* Project Cards Grid */}
           <section className="pb-16">
             {filteredProjects.length === 0 ? (
-              <div className="text-center py-16 px-6 rounded-2xl border border-dashed border-[#cbd5e1] bg-white max-w-lg mx-auto my-6 shadow-xs">
-                <div className="w-12 h-12 rounded-2xl bg-[#f1f5f9] border border-[#e2e8f0] flex items-center justify-center mx-auto mb-3 text-[#1677ff]">
+              <div className="text-center py-16 px-6 border-2 border-dashed border-[#212354] bg-[#0c0d30] max-w-lg mx-auto my-6">
+                <div className="w-12 h-12 bg-[#07081e] border border-[#fff000] flex items-center justify-center mx-auto mb-3 text-[#fff000]">
                   <Layers size={24} />
                 </div>
-                <h3 className="text-sm font-bold text-[#172033] mb-1">
+                <h3 className="text-sm font-bold text-white mb-1 font-mono">
                   {searchQuery ? 'No matching circuits found' : 'No projects in this category'}
                 </h3>
-                <p className="text-xs text-[#64748b] max-w-sm mx-auto mb-5 leading-relaxed">
+                <p className="text-xs text-[#8b8ac4] max-w-sm mx-auto mb-5 leading-relaxed font-mono">
                   {searchQuery
                     ? `No circuit titles match "${searchQuery}". Try a different keyword.`
                     : 'Start a new circuit from scratch or launch one of our verified starter robotics templates.'}
@@ -359,14 +386,14 @@ export const Dashboard: React.FC<DashboardProps> = ({
                 {searchQuery ? (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="px-4 py-2 rounded-lg bg-[#f1f5f9] hover:bg-[#e2e8f0] text-xs font-semibold text-[#1677ff] border border-[#cbd5e1] transition-colors cursor-pointer"
+                    className="px-4 py-2 bg-[#07081e] hover:bg-[#151745] text-xs font-mono font-bold text-[#fff000] border border-[#fff000] transition-colors cursor-pointer"
                   >
                     Clear Search Filter
                   </button>
                 ) : (
                   <button
                     onClick={handleCreateNew}
-                    className="px-5 py-2.5 rounded-xl bg-[#1677ff] hover:bg-[#0060df] text-white font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer"
+                    className="px-5 py-2.5 bg-[#fff000] hover:bg-[#ffe600] text-[#07081e] font-mono font-black text-xs shadow-btn-yellow transition-all cursor-pointer"
                   >
                     + Create First Circuit
                   </button>
@@ -382,16 +409,20 @@ export const Dashboard: React.FC<DashboardProps> = ({
                     project.id === 'starter_line_follower_robot' ||
                     project.id === 'starter_line_follower' ||
                     project.name.includes('Line Follower');
+                  const isRobotArm =
+                    project.id === 'starter_servo_robot_arm' ||
+                    Boolean(project.document?.robotArm) ||
+                    project.name.toLowerCase().includes('robot arm');
 
                   return (
                     <div
                       key={project.id}
                       onClick={() => !isEditing && onOpenProject(project)}
-                      className="dashboard-project-card group bg-white hover:bg-[#fcfdfd] rounded-2xl border border-[#e2e8f0] hover:border-[#1677ff]/50 transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer shadow-xs hover:shadow-md relative hover:-translate-y-0.5"
+                      className="dashboard-project-card group bg-[#0c0d30] hover:bg-[#10123d] border border-[#212354] hover:border-[#fff000] transition-all duration-200 flex flex-col justify-between overflow-hidden cursor-pointer hover:shadow-hard-yellow relative hover:-translate-y-1"
                       data-testid={`project-card-${project.id}`}
                     >
                       {/* Circuit Thumbnail SVG Header */}
-                      <div className="h-44 bg-[#0a0e17] border-b border-[#e2e8f0] relative overflow-hidden flex items-center justify-center group-hover:brightness-105 transition-all">
+                      <div className="h-44 bg-[#07081e] border-b border-[#212354] relative overflow-hidden flex items-center justify-center group-hover:brightness-105 transition-all">
                         <CircuitThumbnail
                           components={project.document.components}
                           wires={project.document.wires}
@@ -399,31 +430,31 @@ export const Dashboard: React.FC<DashboardProps> = ({
                         />
 
                         {/* Category Badge */}
-                        <div className="absolute top-3 left-3 flex items-center gap-1.5 z-10">
+                        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 z-10">
                           {project.isStarter ? (
-                            <span className="flex items-center gap-1 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 backdrop-blur-sm shadow-xs">
-                              <Sparkles size={10} /> Starter Lab
+                            <span className="flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 bg-[#fff000] text-[#07081e]">
+                              <Sparkles size={9} strokeWidth={2.5} /> STARTER LAB
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-[#1677ff]/20 text-[#38bdf8] border border-[#1677ff]/30 backdrop-blur-sm shadow-xs">
-                              <Cpu size={10} /> Custom Design
+                            <span className="flex items-center gap-1 text-[9px] font-mono font-bold px-2 py-0.5 bg-[#00f0ff] text-[#07081e]">
+                              <Cpu size={9} /> CUSTOM DESIGN
                             </span>
                           )}
                         </div>
 
                         {/* Part & Wire Counters Overlay */}
-                        <div className="absolute bottom-3 right-3 flex items-center gap-1.5 text-[10px] font-mono z-10">
-                          <span className="bg-[#0f172a]/85 backdrop-blur-md px-2 py-0.5 rounded-md border border-[#334155] text-[#94a3b8] font-semibold">
-                            <span className="text-[#38bdf8] font-bold">{compCount}</span> {compCount === 1 ? 'part' : 'parts'}
+                        <div className="absolute bottom-2.5 right-2.5 flex items-center gap-1.5 text-[9px] font-mono z-10">
+                          <span className="bg-[#07081e]/90 px-2 py-0.5 border border-[#212354] text-[#8b8ac4]">
+                            <span className="text-[#00f0ff] font-bold">{compCount}</span> {compCount === 1 ? 'part' : 'parts'}
                           </span>
-                          <span className="bg-[#0f172a]/85 backdrop-blur-md px-2 py-0.5 rounded-md border border-[#334155] text-[#94a3b8] font-semibold">
-                            <span className="text-emerald-400 font-bold">{wireCount}</span> {wireCount === 1 ? 'wire' : 'wires'}
+                          <span className="bg-[#07081e]/90 px-2 py-0.5 border border-[#212354] text-[#8b8ac4]">
+                            <span className="text-[#fff000] font-bold">{wireCount}</span> {wireCount === 1 ? 'wire' : 'wires'}
                           </span>
                         </div>
                       </div>
 
                       {/* Card Body & Title */}
-                      <div className="project-card-body p-4 sm:p-5 flex-1 flex flex-col justify-between">
+                      <div className="project-card-body p-4 sm:p-5 flex-1 flex flex-col justify-between bg-[#0c0d30]">
                         <div>
                           {isEditing ? (
                             <div
@@ -439,29 +470,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   if (e.key === 'Escape') setEditingProjectId(null);
                                 }}
                                 autoFocus
-                                className="w-full bg-[#f8fafc] border border-[#1677ff] rounded-lg px-2.5 py-1 text-xs font-semibold text-[#172033] outline-hidden"
+                                className="w-full bg-[#07081e] border border-[#fff000] px-2 py-1 text-xs font-mono font-bold text-[#fff000] outline-none"
                               />
                               <button
                                 onClick={() => saveRename(project.id)}
-                                className="p-1.5 rounded-lg bg-[#1677ff] text-white hover:bg-[#0060df] cursor-pointer"
+                                className="p-1.5 bg-[#fff000] text-[#07081e] hover:bg-[#ffe600] cursor-pointer"
                               >
-                                <Check size={13} />
+                                <Check size={13} strokeWidth={3} />
                               </button>
                               <button
                                 onClick={() => setEditingProjectId(null)}
-                                className="p-1.5 rounded-lg bg-[#f1f5f9] text-[#64748b] hover:bg-[#e2e8f0] cursor-pointer"
+                                className="p-1.5 bg-[#07081e] text-[#8b8ac4] hover:text-white border border-[#212354] cursor-pointer"
                               >
                                 <X size={13} />
                               </button>
                             </div>
                           ) : (
                             <div className="flex items-start justify-between gap-2 mb-1.5">
-                              <h4 className="text-sm font-bold text-[#172033] group-hover:text-[#1677ff] transition-colors leading-snug line-clamp-1">
+                              <h4 className="text-xs font-mono font-bold text-white group-hover:text-[#fff000] transition-colors leading-snug line-clamp-1">
                                 {project.name}
                               </h4>
                               <button
                                 onClick={(e) => startRenaming(project, e)}
-                                className="opacity-0 group-hover:opacity-100 text-[#94a3b8] hover:text-[#172033] p-1 transition-opacity cursor-pointer"
+                                className="opacity-0 group-hover:opacity-100 text-[#8b8ac4] hover:text-[#fff000] p-1 transition-opacity cursor-pointer"
                                 title="Rename project"
                                 data-testid={`rename-btn-${project.id}`}
                               >
@@ -470,22 +501,22 @@ export const Dashboard: React.FC<DashboardProps> = ({
                             </div>
                           )}
 
-                          <p className="text-xs text-[#64748b] line-clamp-2 leading-relaxed mb-4">
+                          <p className="text-[11px] font-mono text-[#8b8ac4] line-clamp-2 leading-relaxed mb-4">
                             {project.description || 'Custom interactive circuit and firmware simulation.'}
                           </p>
                         </div>
 
                         {/* Card Footer: Metadata & Actions */}
-                        <div className="pt-3 border-t border-[#f1f5f9] flex items-center justify-between text-xs font-mono">
-                          <div className="flex items-center gap-1.5 text-[11px] text-[#94a3b8]">
+                        <div className="pt-3 border-t border-[#212354] flex items-center justify-between text-xs font-mono">
+                          <div className="flex items-center gap-1 text-[10px] text-[#8b8ac4]">
                             <Clock size={11} />
                             <span>{formatRelativeTime(project.updatedAt)}</span>
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1.5">
                             <button
                               onClick={(e) => handleDuplicate(project.id, e)}
-                              className="p-1.5 text-[#94a3b8] hover:text-[#1677ff] hover:bg-[#f1f5f9] rounded-lg transition-colors cursor-pointer"
+                              className="p-1 text-[#8b8ac4] hover:text-[#fff000] hover:bg-[#151745] transition-colors cursor-pointer"
                               title="Duplicate circuit project"
                               data-testid={`duplicate-project-btn-${project.id}`}
                             >
@@ -497,7 +528,7 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                 e.stopPropagation();
                                 setDeletingProjectId(project.id);
                               }}
-                              className="p-1.5 text-[#94a3b8] hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                              className="p-1 text-[#8b8ac4] hover:text-rose-400 hover:bg-rose-950/30 transition-colors cursor-pointer"
                               title="Delete circuit project"
                               data-testid={`delete-project-btn-${project.id}`}
                             >
@@ -510,22 +541,37 @@ export const Dashboard: React.FC<DashboardProps> = ({
                                   e.stopPropagation();
                                   handleLaunchLineFollower(project);
                                 }}
-                                className="px-2.5 py-1 text-xs text-emerald-800 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all font-bold flex items-center gap-1 shadow-2xs active:scale-95 cursor-pointer ml-1"
+                                className="px-2 py-0.5 text-[10px] text-[#00f0ff] bg-[#00f0ff]/15 hover:bg-[#00f0ff] hover:text-[#07081e] border border-[#00f0ff]/40 transition-all font-bold flex items-center gap-1 cursor-pointer ml-1"
                                 title="Launch dedicated Line Follower Lab"
                                 data-testid={`launch-lab-card-btn-${project.id}`}
                               >
-                                <Play size={10} fill="currentColor" />
+                                <Play size={9} fill="currentColor" strokeWidth={0} />
                                 <span>Lab</span>
+                              </button>
+                            )}
+
+                            {isRobotArm && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleLaunchRobotArm(project);
+                                }}
+                                className="px-2 py-0.5 text-[10px] text-[#fff000] bg-[#fff000]/15 hover:bg-[#fff000] hover:text-[#07081e] border border-[#fff000]/40 transition-all font-bold flex items-center gap-1 cursor-pointer ml-1"
+                                title="Launch dedicated 5-Axis Servo Robot Arm Lab"
+                                data-testid={`launch-arm-card-btn-${project.id}`}
+                              >
+                                <Play size={9} fill="currentColor" strokeWidth={0} />
+                                <span>Arm</span>
                               </button>
                             )}
 
                             <button
                               onClick={() => onOpenProject(project)}
-                              className="ml-1 flex items-center gap-1 px-3 py-1 rounded-lg bg-[#1677ff]/10 hover:bg-[#1677ff] text-[#1677ff] hover:text-white font-bold text-xs border border-[#1677ff]/30 hover:border-transparent transition-all shadow-2xs cursor-pointer active:scale-95"
+                              className="ml-1 flex items-center gap-1 px-2.5 py-1 bg-[#fff000] hover:bg-[#ffe600] text-[#07081e] font-mono font-bold text-[11px] transition-all cursor-pointer"
                               data-testid={`open-project-btn-${project.id}`}
                             >
                               <span>Open</span>
-                              <ArrowRight size={12} />
+                              <ArrowRight size={11} strokeWidth={2.5} />
                             </button>
                           </div>
                         </div>
@@ -541,29 +587,29 @@ export const Dashboard: React.FC<DashboardProps> = ({
 
       {/* Delete Confirmation Modal */}
       {deletingProjectId && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-xs z-50 flex items-center justify-center p-4">
-          <div className="bg-white border border-[#e2e8f0] rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center gap-3 text-rose-600">
-              <div className="w-10 h-10 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center shrink-0">
+        <div className="fixed inset-0 bg-[#07081e]/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0c0d30] border-2 border-[#fff000] max-w-sm w-full p-6 shadow-hard-yellow space-y-4">
+            <div className="flex items-center gap-3 text-rose-400">
+              <div className="w-10 h-10 bg-rose-950/40 border border-rose-500/40 flex items-center justify-center shrink-0">
                 <AlertTriangle size={20} />
               </div>
-              <h3 className="font-bold text-sm text-[#172033]">Delete Circuit Project</h3>
+              <h3 className="font-bold text-sm text-white font-mono">Delete Circuit Project</h3>
             </div>
 
-            <p className="text-xs text-[#64748b] leading-relaxed">
+            <p className="text-xs text-[#8b8ac4] leading-relaxed font-mono">
               Are you sure you want to delete this project? This will remove its circuit layout, sketch code, and configuration from local storage.
             </p>
 
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#f1f5f9] text-xs">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#212354] text-xs font-mono">
               <button
                 onClick={() => setDeletingProjectId(null)}
-                className="px-3.5 py-1.5 rounded-lg bg-[#f1f5f9] hover:bg-[#e2e8f0] text-[#64748b] font-medium transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 bg-[#07081e] hover:bg-[#151745] text-[#8b8ac4] hover:text-white border border-[#212354] transition-colors cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white font-bold transition-colors shadow-xs cursor-pointer active:scale-95"
+                className="px-4 py-1.5 bg-rose-600 hover:bg-rose-700 text-white font-bold transition-colors cursor-pointer"
                 data-testid="confirm-delete-btn"
               >
                 Confirm Delete
