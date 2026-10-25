@@ -26,10 +26,11 @@ interface DragConnectingState {
 
 function getWireColor(pin?: PinDefinition): string {
   if (!pin) return '#00f0ff';
-  if (pin.id === 'GND' || pin.id === 'NEG' || pin.id === 'GND1' || pin.id === 'GND2' || pin.id === 'GND3' || pin.type === PinType.GROUND) return '#64748b';
-  if (pin.id === '3V3' || pin.id === 'VCC' || pin.id === '5V' || pin.type === PinType.POWER_VCC) return '#06b6d4';
-  if (pin.id === 'VM' || pin.id === 'POS' || pin.id === 'VIN' || pin.type === PinType.POWER_VM) return '#f59e0b';
+  if (pin.id === 'GND' || pin.id === 'NEG' || pin.id === 'GND1' || pin.id === 'GND2' || pin.id === 'GND3' || pin.id === 'GND4' || pin.type === PinType.GROUND) return '#64748b';
+  if (pin.id === '3V3' || pin.id === 'VCC' || pin.id === '5V' || pin.id === 'POS' || pin.id === 'VCC1' || pin.id === 'VCC2' || pin.id === 'VCC3' || pin.id === 'VCC4' || pin.type === PinType.POWER_VCC) return '#06b6d4';
+  if (pin.id === 'VM' || pin.id === 'VIN' || pin.type === PinType.POWER_VM) return '#f59e0b';
   if (pin.id === 'STBY') return '#10b981';
+  if (pin.id === 'SIG') return '#f97316';
   if (pin.type === PinType.PWM_OUTPUT || pin.id === 'PWMA' || pin.id === 'PWMB') return '#a855f7';
   if (pin.id === 'AO1' || pin.id === 'BO1' || pin.id === 'M_POS') return '#ef4444';
   if (pin.id === 'AO2' || pin.id === 'BO2' || pin.id === 'M_NEG') return '#334155';
@@ -1004,6 +1005,173 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
                     </text>
                     <text x="145" y={height - 20} textAnchor="middle" fill="#64748b" fontSize="6.5" fontFamily="monospace">
                       QTR-8RC COMPATIBLE
+                    </text>
+                  </g>
+                )}
+
+                {comp.type === 'SERVO_SG90' && (
+                  <g pointerEvents="none">
+                    {/* SG90 Translucent Blue Micro Servo Body */}
+                    <rect
+                      x="0"
+                      y="26"
+                      width={width}
+                      height={height - 26}
+                      rx="4"
+                      fill="#0284c7"
+                      stroke="#0369a1"
+                      strokeWidth="1.5"
+                    />
+                    <rect x="6" y="32" width={width - 12} height={height - 38} rx="3" fill="#38bdf8" fillOpacity="0.12" />
+
+                    {/* Mounting Flange Ears with Brass Eyelets */}
+                    <rect x={width - 12} y="34" width="12" height="14" rx="2" fill="#0284c7" stroke="#0369a1" strokeWidth="1" />
+                    <circle cx={width - 6} cy="41" r="3" fill="#0f172a" stroke="#ca8a04" strokeWidth="1" />
+                    <rect x={width - 12} y={height - 24} width="12" height="14" rx="2" fill="#0284c7" stroke="#0369a1" strokeWidth="1" />
+                    <circle cx={width - 6} cy={height - 17} r="3" fill="#0f172a" stroke="#ca8a04" strokeWidth="1" />
+
+                    {/* Output Spline Hub & Horn */}
+                    <circle cx="96" cy="63" r="18" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1.5" />
+                    <circle cx="96" cy="63" r="12" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="1" />
+                    <circle cx="96" cy="63" r="4" fill="#0f172a" stroke="#ca8a04" strokeWidth="1.5" />
+                    <rect x="81" y="61" width="30" height="4" rx="2" fill="#f8fafc" />
+                    <rect x="94" y="48" width="4" height="30" rx="2" fill="#f8fafc" />
+
+                    {/* Silkscreen Labels */}
+                    <text x="46" y="52" textAnchor="middle" fill="#ffffff" fontSize="8" fontFamily="sans-serif" fontWeight="800">
+                      TOWER PRO
+                    </text>
+                    <text x="46" y="66" textAnchor="middle" fill="#fef08a" fontSize="7.5" fontFamily="monospace" fontWeight="700">
+                      SG90 9g
+                    </text>
+                    <text x="46" y="78" textAnchor="middle" fill="#bae6fd" fontSize="6.5" fontFamily="monospace">
+                      MICRO SERVO
+                    </text>
+                  </g>
+                )}
+
+                {comp.type === 'SERVO_MG996R' && (
+                  <g pointerEvents="none">
+                    {/* MG996R Matte Black High-Torque Body */}
+                    <rect
+                      x="0"
+                      y="26"
+                      width={width}
+                      height={height - 26}
+                      rx="5"
+                      fill="#18181b"
+                      stroke="#3f3f46"
+                      strokeWidth="1.5"
+                    />
+                    <rect x="5" y="31" width={width - 10} height={height - 36} rx="3" fill="#27272a" stroke="#52525b" strokeWidth="0.8" />
+
+                    {/* Heavy-Duty Mounting Flanges */}
+                    <rect x={width - 12} y="34" width="12" height="16" rx="2" fill="#18181b" stroke="#52525b" strokeWidth="1" />
+                    <circle cx={width - 6} cy="42" r="2.5" fill="#09090b" stroke="#ca8a04" strokeWidth="1" />
+                    <rect x={width - 12} y={height - 26} width="12" height="16" rx="2" fill="#18181b" stroke="#52525b" strokeWidth="1" />
+                    <circle cx={width - 6} cy={height - 18} r="2.5" fill="#09090b" stroke="#ca8a04" strokeWidth="1" />
+
+                    {/* Brass Metal Output Spline Gear */}
+                    <circle cx="106" cy="68" r="22" fill="#ca8a04" stroke="#eab308" strokeWidth="2" />
+                    <circle cx="106" cy="68" r="15" fill="#a16207" stroke="#fde047" strokeWidth="1" />
+                    <circle cx="106" cy="68" r="5" fill="#09090b" stroke="#ca8a04" strokeWidth="2" />
+
+                    {/* Spec Badge */}
+                    <rect x="16" y="44" width="58" height="34" rx="2" fill="#09090b" stroke="#ca8a04" strokeWidth="0.8" />
+                    <text x="45" y="58" textAnchor="middle" fill="#f59e0b" fontSize="8" fontFamily="monospace" fontWeight="800">
+                      MG996R
+                    </text>
+                    <text x="45" y="70" textAnchor="middle" fill="#cbd5e1" fontSize="6.5" fontFamily="monospace" fontWeight="700">
+                      METAL GEAR
+                    </text>
+                    <text x="45" y="88" textAnchor="middle" fill="#a1a1aa" fontSize="6" fontFamily="monospace">
+                      11 kg·cm 55g
+                    </text>
+                  </g>
+                )}
+
+                {comp.type === 'SERVO_POWER_SUPPLY' && (
+                  <g pointerEvents="none">
+                    {/* DC 6V 3A Regulated Power Supply */}
+                    <rect
+                      x="0"
+                      y="26"
+                      width={width}
+                      height={height - 26}
+                      rx="4"
+                      fill="#0f172a"
+                      stroke="#334155"
+                      strokeWidth="1.5"
+                    />
+
+                    {/* Aluminum Heatsink Fins */}
+                    {[16, 26, 36, 46, 56].map((hx) => (
+                      <rect key={hx} x={hx} y="38" width="6" height="44" rx="1.5" fill="#334155" stroke="#475569" strokeWidth="0.8" />
+                    ))}
+
+                    {/* DC Output Terminal Block */}
+                    <rect x={width - 28} y="34" width="24" height="52" rx="3" fill="#1e293b" stroke="#475569" strokeWidth="1" />
+                    <circle cx={width - 16} cy="44" r="5" fill="#ef4444" stroke="#991b1b" strokeWidth="1" />
+                    <circle cx={width - 16} cy="70" r="5" fill="#020617" stroke="#475569" strokeWidth="1" />
+
+                    {/* Status Power LED */}
+                    <circle cx="80" cy="45" r="4" fill="#22c55e" stroke="#15803d" strokeWidth="1" />
+                    <circle cx="80" cy="45" r="2" fill="#86efac" />
+                    <text x="90" y="48" fill="#86efac" fontSize="6.5" fontFamily="monospace" fontWeight="700">
+                      6.0V OK
+                    </text>
+
+                    {/* Silkscreen Label */}
+                    <text x="100" y="68" textAnchor="middle" fill="#f8fafc" fontSize="8" fontFamily="sans-serif" fontWeight="700">
+                      DC SERVO PSU
+                    </text>
+                    <text x="100" y="80" textAnchor="middle" fill="#38bdf8" fontSize="7" fontFamily="monospace" fontWeight="700">
+                      6.0V 3.0A (18W)
+                    </text>
+                  </g>
+                )}
+
+                {comp.type === 'BREADBOARD' && (
+                  <g pointerEvents="none">
+                    {/* Solderless Mini Breadboard */}
+                    <rect
+                      x="0"
+                      y="26"
+                      width={width}
+                      height={height - 26}
+                      rx="5"
+                      fill="#f8fafc"
+                      stroke="#cbd5e1"
+                      strokeWidth="1.5"
+                    />
+
+                    {/* Positive Red Power Rail (+) */}
+                    <line x1="16" y1="36" x2={width - 16} y2="36" stroke="#ef4444" strokeWidth="1.5" />
+                    <text x="8" y="39" fill="#ef4444" fontSize="9" fontWeight="800" fontFamily="monospace">+</text>
+
+                    {/* Negative Blue Ground Rail (-) */}
+                    <line x1="16" y1="84" x2={width - 16} y2="84" stroke="#3b82f6" strokeWidth="1.5" />
+                    <text x="8" y="87" fill="#3b82f6" fontSize="11" fontWeight="800" fontFamily="monospace">-</text>
+
+                    {/* Center Divider Groove */}
+                    <rect x="12" y="58" width={width - 24} height="4" fill="#e2e8f0" rx="1" />
+
+                    {/* Contact Tie-Point Sockets */}
+                    {[30, 70, 110, 150].map((cx) => (
+                      <g key={cx}>
+                        <circle cx={cx} cy="45" r="2.5" fill="#334155" stroke="#94a3b8" strokeWidth="0.5" />
+                        <circle cx={cx} cy="53" r="2.5" fill="#334155" stroke="#94a3b8" strokeWidth="0.5" />
+                        <circle cx={cx} cy="67" r="2.5" fill="#334155" stroke="#94a3b8" strokeWidth="0.5" />
+                        <circle cx={cx} cy="75" r="2.5" fill="#334155" stroke="#94a3b8" strokeWidth="0.5" />
+                      </g>
+                    ))}
+
+                    {/* Silkscreen Label */}
+                    <text x={width / 2} y="53" textAnchor="middle" fill="#64748b" fontSize="7" fontFamily="monospace" fontWeight="700">
+                      POWER DISTRIBUTION BUS
+                    </text>
+                    <text x={width / 2} y="74" textAnchor="middle" fill="#94a3b8" fontSize="6.5" fontFamily="monospace">
+                      SOLDERLESS BREADBOARD
                     </text>
                   </g>
                 )}

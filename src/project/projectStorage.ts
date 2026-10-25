@@ -1,10 +1,12 @@
 import { ProjectDocument, validateProjectDocument } from './types';
 import { createDefaultProject, DEFAULT_SKETCH, CANONICAL_PIN_MAPPING } from './defaultProject';
 import { createStarterLineFollower } from './lineFollowerProject';
+import { createStarterRobotArm } from './robotArmProject';
 import { createESP32DevKit, createTB6612FNG, createBatteryPack, createN20Motor } from '../circuit/components';
 import { WireConnection } from '../circuit/types';
 
 export { createStarterLineFollower } from './lineFollowerProject';
+export { createStarterRobotArm } from './robotArmProject';
 
 export interface StoredProject {
   id: string;
@@ -137,18 +139,39 @@ export function getAllStoredProjects(): StoredProject[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      const initial = [createStarterLineFollower(), createStarter2WDRobot(), createStarterDualMotorBench(), createStarterMinimalESP32()];
+      const initial = [
+        createStarterLineFollower(),
+        createStarterRobotArm(),
+        createStarter2WDRobot(),
+        createStarterDualMotorBench(),
+        createStarterMinimalESP32(),
+      ];
       saveAllStoredProjects(initial);
       return initial;
     }
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed) || parsed.length === 0) {
-      const initial = [createStarterLineFollower(), createStarter2WDRobot(), createStarterDualMotorBench(), createStarterMinimalESP32()];
+      const initial = [
+        createStarterLineFollower(),
+        createStarterRobotArm(),
+        createStarter2WDRobot(),
+        createStarterDualMotorBench(),
+        createStarterMinimalESP32(),
+      ];
       saveAllStoredProjects(initial);
       return initial;
     }
+    let modified = false;
     if (!parsed.some((p: StoredProject) => p.id === 'starter_line_follower_robot')) {
       parsed.unshift(createStarterLineFollower());
+      modified = true;
+    }
+    if (!parsed.some((p: StoredProject) => p.id === 'starter_servo_robot_arm')) {
+      const idx = parsed.findIndex((p: StoredProject) => p.id === 'starter_line_follower_robot');
+      parsed.splice(idx >= 0 ? idx + 1 : 0, 0, createStarterRobotArm());
+      modified = true;
+    }
+    if (modified) {
       saveAllStoredProjects(parsed);
     }
     return parsed;

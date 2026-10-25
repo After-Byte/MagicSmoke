@@ -51,8 +51,8 @@ export const CircuitThumbnail: React.FC<CircuitThumbnailProps> = ({
   const compMap = new Map<string, ComponentInstance>();
   for (const c of components) {
     compMap.set(c.id, c);
-    const width = c.dimensions?.width ?? (c.type === 'ESP32_DEVKIT_V1' ? 200 : c.type === 'ARDUINO_UNO_R3' ? 220 : c.type === 'IR_SENSOR_ARRAY_8CH' ? 220 : c.type === 'TB6612FNG' ? 180 : 140);
-    const height = c.dimensions?.height ?? (c.type === 'ESP32_DEVKIT_V1' ? 235 : c.type === 'ARDUINO_UNO_R3' ? 350 : c.type === 'IR_SENSOR_ARRAY_8CH' ? 210 : c.type === 'TB6612FNG' ? 295 : 100);
+    const width = c.dimensions?.width ?? (c.type === 'ESP32_DEVKIT_V1' ? 200 : c.type === 'ARDUINO_UNO_R3' ? 220 : c.type === 'IR_SENSOR_ARRAY_8CH' ? 220 : c.type === 'TB6612FNG' ? 180 : c.type === 'BREADBOARD' ? 180 : c.type === 'SERVO_POWER_SUPPLY' ? 160 : c.type === 'SERVO_MG996R' ? 150 : 140);
+    const height = c.dimensions?.height ?? (c.type === 'ESP32_DEVKIT_V1' ? 235 : c.type === 'ARDUINO_UNO_R3' ? 350 : c.type === 'IR_SENSOR_ARRAY_8CH' ? 210 : c.type === 'TB6612FNG' ? 295 : c.type === 'SERVO_MG996R' ? 110 : 100);
     if (c.position.x < minX) minX = c.position.x;
     if (c.position.y < minY) minY = c.position.y;
     if (c.position.x + width > maxX) maxX = c.position.x + width;
@@ -147,8 +147,8 @@ export const CircuitThumbnail: React.FC<CircuitThumbnailProps> = ({
       {/* 2. Render Hardware Components */}
       <g>
         {components.map((comp) => {
-          const width = comp.dimensions?.width ?? (comp.type === 'ESP32_DEVKIT_V1' ? 200 : comp.type === 'TB6612FNG' ? 180 : 140);
-          const height = comp.dimensions?.height ?? (comp.type === 'ESP32_DEVKIT_V1' ? 235 : comp.type === 'TB6612FNG' ? 295 : 100);
+          const width = comp.dimensions?.width ?? (comp.type === 'ESP32_DEVKIT_V1' ? 200 : comp.type === 'ARDUINO_UNO_R3' ? 220 : comp.type === 'IR_SENSOR_ARRAY_8CH' ? 220 : comp.type === 'TB6612FNG' ? 180 : comp.type === 'BREADBOARD' ? 180 : comp.type === 'SERVO_POWER_SUPPLY' ? 160 : comp.type === 'SERVO_MG996R' ? 150 : 140);
+          const height = comp.dimensions?.height ?? (comp.type === 'ESP32_DEVKIT_V1' ? 235 : comp.type === 'ARDUINO_UNO_R3' ? 350 : comp.type === 'IR_SENSOR_ARRAY_8CH' ? 210 : comp.type === 'TB6612FNG' ? 295 : comp.type === 'SERVO_MG996R' ? 110 : 100);
           const { x, y } = comp.position;
 
           return (
@@ -502,6 +502,130 @@ export const CircuitThumbnail: React.FC<CircuitThumbnailProps> = ({
                   </text>
                   <text x={width / 2 + 30} y="55" textAnchor="middle" fill="#64748b" fontSize="6.5" fontFamily="monospace">
                     QTR-8RC
+                  </text>
+                </g>
+              )}
+
+              {comp.type === 'SERVO_SG90' && (
+                <g>
+                  {/* SG90 Translucent Blue Micro Servo Body */}
+                  <rect
+                    x="0"
+                    y="0"
+                    width={width}
+                    height={height}
+                    rx="4"
+                    fill="#0284c7"
+                    stroke="#0369a1"
+                    strokeWidth="1.2"
+                  />
+                  {/* Flange ear tabs */}
+                  <rect x={width - 10} y="15" width="10" height="14" rx="2" fill="#0284c7" />
+                  <circle cx={width - 5} cy="22" r="2.5" fill="#0f172a" stroke="#ca8a04" strokeWidth="0.8" />
+                  <rect x={width - 10} y={height - 29} width="10" height="14" rx="2" fill="#0284c7" />
+                  <circle cx={width - 5} cy={height - 22} r="2.5" fill="#0f172a" stroke="#ca8a04" strokeWidth="0.8" />
+
+                  {/* Output Spline Horn */}
+                  <circle cx="95" cy="50" r="16" fill="#f8fafc" stroke="#cbd5e1" strokeWidth="1.2" />
+                  <circle cx="95" cy="50" r="10" fill="#e2e8f0" />
+                  <circle cx="95" cy="50" r="3" fill="#0f172a" />
+                  <rect x="83" y="48.5" width="24" height="3" rx="1.5" fill="#f8fafc" />
+                  <rect x="93.5" y="38" width="3" height="24" rx="1.5" fill="#f8fafc" />
+
+                  <text x="45" y="42" textAnchor="middle" fill="#ffffff" fontSize="7.5" fontFamily="sans-serif" fontWeight="800">
+                    SG90
+                  </text>
+                  <text x="45" y="55" textAnchor="middle" fill="#fef08a" fontSize="6.5" fontFamily="monospace" fontWeight="700">
+                    9g Micro
+                  </text>
+                </g>
+              )}
+
+              {comp.type === 'SERVO_MG996R' && (
+                <g>
+                  {/* MG996R Heavy Duty High-Torque Servo */}
+                  <rect
+                    x="0"
+                    y="0"
+                    width={width}
+                    height={height}
+                    rx="5"
+                    fill="#18181b"
+                    stroke="#3f3f46"
+                    strokeWidth="1.2"
+                  />
+                  {/* Brass Spline Output Hub */}
+                  <circle cx="105" cy="55" r="20" fill="#ca8a04" stroke="#eab308" strokeWidth="1.5" />
+                  <circle cx="105" cy="55" r="13" fill="#a16207" />
+                  <circle cx="105" cy="55" r="4" fill="#09090b" stroke="#ca8a04" strokeWidth="1.2" />
+
+                  {/* Spec Badge */}
+                  <rect x="14" y="36" width="56" height="32" rx="2" fill="#09090b" stroke="#ca8a04" strokeWidth="0.8" />
+                  <text x="42" y="50" textAnchor="middle" fill="#f59e0b" fontSize="7.5" fontFamily="monospace" fontWeight="800">
+                    MG996R
+                  </text>
+                  <text x="42" y="62" textAnchor="middle" fill="#cbd5e1" fontSize="6" fontFamily="monospace">
+                    METAL GEAR
+                  </text>
+                </g>
+              )}
+
+              {comp.type === 'SERVO_POWER_SUPPLY' && (
+                <g>
+                  {/* Regulated 6V 3A DC PSU */}
+                  <rect
+                    x="0"
+                    y="0"
+                    width={width}
+                    height={height}
+                    rx="4"
+                    fill="#0f172a"
+                    stroke="#334155"
+                    strokeWidth="1.2"
+                  />
+                  {/* Heatsink stripes */}
+                  {[16, 26, 36, 46].map((hx) => (
+                    <rect key={hx} x={hx} y="15" width="5" height="40" rx="1" fill="#334155" />
+                  ))}
+                  {/* Output terminals */}
+                  <rect x={width - 24} y="25" width="18" height="48" rx="2" fill="#1e293b" />
+                  <circle cx={width - 15} cy="36" r="4" fill="#ef4444" />
+                  <circle cx={width - 15} cy="60" r="4" fill="#020617" stroke="#475569" strokeWidth="0.8" />
+                  {/* Power LED */}
+                  <circle cx="75" cy="30" r="3" fill="#22c55e" />
+                  <text x="96" y="50" textAnchor="middle" fill="#f8fafc" fontSize="7" fontFamily="sans-serif" fontWeight="700">
+                    6V 3A PSU
+                  </text>
+                </g>
+              )}
+
+              {comp.type === 'BREADBOARD' && (
+                <g>
+                  {/* Solderless Breadboard */}
+                  <rect
+                    x="0"
+                    y="0"
+                    width={width}
+                    height={height}
+                    rx="4"
+                    fill="#f8fafc"
+                    stroke="#cbd5e1"
+                    strokeWidth="1.2"
+                  />
+                  {/* Red/Blue bus lines */}
+                  <line x1="12" y1="12" x2={width - 12} y2="12" stroke="#ef4444" strokeWidth="1.2" />
+                  <line x1="12" y1={height - 12} x2={width - 12} y2={height - 12} stroke="#3b82f6" strokeWidth="1.2" />
+                  {/* Divider groove */}
+                  <rect x="10" y={height / 2 - 2} width={width - 20} height="4" fill="#e2e8f0" rx="1" />
+                  {/* Sockets */}
+                  {[30, 70, 110, 150].map((cx) => (
+                    <g key={cx}>
+                      <circle cx={cx} cy="25" r="2" fill="#334155" />
+                      <circle cx={cx} cy={height - 25} r="2" fill="#334155" />
+                    </g>
+                  ))}
+                  <text x={width / 2} y={height / 2 - 6} textAnchor="middle" fill="#64748b" fontSize="6.5" fontFamily="monospace" fontWeight="700">
+                    BREADBOARD
                   </text>
                 </g>
               )}

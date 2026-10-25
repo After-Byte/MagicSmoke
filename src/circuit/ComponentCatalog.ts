@@ -8,6 +8,10 @@ import {
   createGroundBus,
   createHCSR04Sensor,
   createIRSensorArray8CH,
+  createSG90Servo,
+  createMG996RServo,
+  createServoPowerSupply,
+  createBreadboardMini,
 } from './components';
 
 export type CatalogCategory = 'all' | 'mcu' | 'driver' | 'actuator' | 'power' | 'sensor' | 'passive';
@@ -58,6 +62,69 @@ export const COMPONENT_CATALOG: CatalogItem[] = [
     simulationStatus: 'fully_simulated',
     instantiate: (customId, pos) =>
       createESP32DevKit(customId || `esp32_${Date.now()}`, pos || { x: 60, y: 80 }),
+  },
+  {
+    id: 'catalog_servo_mg996r',
+    type: 'SERVO_MG996R',
+    name: 'MG996R High-Torque Metal Gear Servo',
+    category: 'actuator',
+    description: 'High-torque metal geartrain servo producing up to 10 kg·cm torque at 6V for heavy robot arm base and shoulder articulation.',
+    specs: {
+      voltage: '4.8V – 7.2V DC',
+      current: '15mA idle, 500mA run, 2.5A stall',
+      interfaces: 'SIG (PWM), VCC (+6V), GND (0V)',
+      dimensions: '150 × 110 px',
+    },
+    simulationStatus: 'fully_simulated',
+    instantiate: (customId, pos) =>
+      createMG996RServo(customId || `servo_mg996r_${Date.now()}`, 'MG996R Metal Gear Servo', pos || { x: 550, y: 150 }),
+  },
+  {
+    id: 'catalog_servo_sg90',
+    type: 'SERVO_SG90',
+    name: 'SG90 9g Micro Servo',
+    category: 'actuator',
+    description: 'Lightweight micro servo motor with 1.8 kg·cm torque for robot arm wrist pitch and gripper finger actuation.',
+    specs: {
+      voltage: '4.8V – 6.0V DC',
+      current: '10mA idle, 150mA run, 650mA stall',
+      interfaces: 'SIG (PWM), VCC (+5V), GND (0V)',
+      dimensions: '140 × 100 px',
+    },
+    simulationStatus: 'fully_simulated',
+    instantiate: (customId, pos) =>
+      createSG90Servo(customId || `servo_sg90_${Date.now()}`, 'SG90 Micro Servo', pos || { x: 550, y: 280 }),
+  },
+  {
+    id: 'catalog_servo_psu',
+    type: 'SERVO_POWER_SUPPLY',
+    name: '5V/6V 3A Regulated DC Power Supply',
+    category: 'power',
+    description: 'External step-down linear/buck power supply delivering clean 3A continuous DC current to prevent Arduino brownouts.',
+    specs: {
+      voltage: '6.0V DC regulated',
+      current: '3000mA continuous',
+      interfaces: 'VOUT (+6V) & GND (-)',
+      dimensions: '160 × 100 px',
+    },
+    simulationStatus: 'fully_simulated',
+    instantiate: (customId, pos) =>
+      createServoPowerSupply(customId || `psu_${Date.now()}`, pos || { x: 300, y: 440 }),
+  },
+  {
+    id: 'catalog_breadboard_mini',
+    type: 'BREADBOARD',
+    name: 'Mini Solderless Breadboard Distribution Rail',
+    category: 'passive',
+    description: 'Tie-point distribution rail for distributing external 6V power and common ground across multiple servo connectors.',
+    specs: {
+      voltage: '0V–12V DC',
+      interfaces: 'Positive Rail (+), Negative Rail (-)',
+      dimensions: '180 × 100 px',
+    },
+    simulationStatus: 'fully_simulated',
+    instantiate: (customId, pos) =>
+      createBreadboardMini(customId || `bb_${Date.now()}`, pos || { x: 300, y: 560 }),
   },
   {
     id: 'catalog_ir_array',

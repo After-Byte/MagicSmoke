@@ -5,6 +5,7 @@ import { CodeEditor } from './editor/CodeEditor';
 import { CircuitCanvas } from './circuit/CircuitCanvas';
 import { ConsolePanel } from './console/ConsolePanel';
 import { LineFollowerLab } from './lab/LineFollowerLab';
+import { RobotArmLab } from './lab/RobotArmLab';
 import { DEFAULT_SKETCH, createDefaultProject } from './project/defaultProject';
 import { ProjectDocument, validateProjectDocument } from './project/types';
 import { ComponentInstance, WireConnection } from './circuit/types';
@@ -44,9 +45,12 @@ export const App: React.FC = () => {
   const viewportRef = useRef<Robot3DViewport | null>(null);
   const viewportContainerRef = useRef<HTMLDivElement>(null);
 
-  // Active View State: 'dashboard' vs 'editor' vs 'lab'
-  const [currentView, setCurrentView] = useState<'dashboard' | 'editor' | 'lab'>(() => {
+  // Active View State: 'dashboard' vs 'editor' vs 'lab' vs 'arm'
+  const [currentView, setCurrentView] = useState<'dashboard' | 'editor' | 'lab' | 'arm'>(() => {
     if (typeof window !== 'undefined') {
+      if (window.location.hash === '#arm' || window.location.search.includes('view=arm')) {
+        return 'arm';
+      }
       if (window.location.hash === '#lab' || window.location.search.includes('view=lab')) {
         return 'lab';
       }
@@ -54,7 +58,7 @@ export const App: React.FC = () => {
         return 'editor';
       }
       const saved = localStorage.getItem('magicsmoke_active_view');
-      if (saved === 'lab' || saved === 'editor') return saved as any;
+      if (saved === 'lab' || saved === 'editor' || saved === 'arm') return saved as any;
       return 'dashboard';
     }
     return 'dashboard';
@@ -66,15 +70,27 @@ export const App: React.FC = () => {
       (window.location.hash === '#lab' ||
         window.location.search.includes('view=lab') ||
         localStorage.getItem('magicsmoke_active_view') === 'lab');
+    const isArm =
+      typeof window !== 'undefined' &&
+      (window.location.hash === '#arm' ||
+        window.location.search.includes('view=arm') ||
+        localStorage.getItem('magicsmoke_active_view') === 'arm');
     const activeId = getActiveProjectId();
     const all = getAllStoredProjects();
     if (activeId) {
       const found = all.find((p) => p.id === activeId);
       if (found) {
+        if (isArm && (found.id === 'starter_servo_robot_arm' || found.document?.robotArm)) {
+          return found;
+        }
         if (!isLab || found.id === 'starter_line_follower_robot' || found.document?.track) {
           return found;
         }
       }
+    }
+    if (isArm) {
+      const arm = all.find((p) => p.id === 'starter_servo_robot_arm' || p.document?.robotArm || p.name.includes('Robot Arm'));
+      if (arm) return arm;
     }
     if (isLab) {
       const lf = all.find((p) => p.id === 'starter_line_follower_robot' || p.name.includes('Line Follower'));
@@ -354,6 +370,11 @@ export const App: React.FC = () => {
     setActiveProject(project);
     setActiveProjectId(project.id);
     setCode(project.document.code);
+    if (project.id === 'starter_servo_robot_arm' || project.document?.robotArm) {
+      setCurrentView('arm');
+      localStorage.setItem('magicsmoke_active_view', 'arm');
+      return;
+    }
     if (coordinatorRef.current) {
       coordinatorRef.current.loadProject(project.document);
       const evalRes = coordinatorRef.current.circuit.evaluateCircuit();
@@ -380,6 +401,26 @@ export const App: React.FC = () => {
     }
     setCurrentView('lab');
     localStorage.setItem('magicsmoke_active_view', 'lab');
+  };
+
+  const handleLaunchRobotArmLab = (project?: StoredProject) => {
+    const all = getAllStoredProjects();
+    const target =
+      project ||
+      all.find(
+        (p) =>
+          p.id === 'starter_servo_robot_arm' ||
+          Boolean(p.document?.robotArm) ||
+          p.name.includes('Robot Arm')
+      ) ||
+      all[0];
+    if (target) {
+      setActiveProject(target);
+      setActiveProjectId(target.id);
+      setCode(target.document.code);
+    }
+    setCurrentView('arm');
+    localStorage.setItem('magicsmoke_active_view', 'arm');
   };
 
   const handleSaveProject = () => {
@@ -471,6 +512,22 @@ export const App: React.FC = () => {
           localStorage.setItem('magicsmoke_active_view', 'editor');
         }}
         onLaunchLineFollowerLab={handleLaunchLineFollowerLab}
+        onLaunchRobotArmLab={handleLaunchRobotArmLab}
+      />
+    );
+  }
+
+  if (currentView === 'arm') {
+    return (
+      <RobotArmLab
+        initialProject={activeProject || undefined}
+        onBackToDashboard={() => {
+          setCurrentView('dashboard');
+          localStorage.setItem('magicsmoke_active_view', 'dashboard');
+        }}
+        onSaveProject={(savedProj) => {
+          setActiveProject(savedProj);
+        }}
       />
     );
   }
@@ -533,6 +590,17 @@ export const App: React.FC = () => {
               >
                 <Activity size={11} />
                 <span>Open in Lab</span>
+              </button>
+            )}
+            {(activeProject?.id === 'starter_servo_robot_arm' || activeProject?.document?.robotArm || activeProject?.name.includes('Robot Arm')) && (
+              <button
+                onClick={() => handleLaunchRobotArmLab(activeProject || undefined)}
+                className="flex items-center gap-1 px-2 py-0.5 rounded bg-[#38bdf8]/15 hover:bg-[#38bdf8]/25 text-[#38bdf8] border border-[#38bdf8]/40 text-[11px] font-mono font-bold transition-all shadow-sm active:scale-95 ml-1.5"
+                title="Open in dedicated 5-Axis Servo Robot Arm Lab"
+                data-testid="open-in-arm-lab-btn"
+              >
+                <Activity size={11} />
+                <span>Arm Lab</span>
               </button>
             )}
           </div>

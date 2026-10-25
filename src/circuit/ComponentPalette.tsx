@@ -53,16 +53,22 @@ export const ComponentPalette: React.FC<ComponentPaletteProps> = ({
   const getCategoryIcon = (type: ComponentInstance['type']) => {
     switch (type) {
       case 'ESP32_DEVKIT_V1':
+      case 'ARDUINO_UNO_R3':
         return <Cpu className="text-[#00f0ff]" size={18} />;
       case 'TB6612FNG':
         return <Zap className="text-amber-400" size={18} />;
       case 'N20_MOTOR':
-        return <Disc className="text-emerald-400" size={18} />;
+      case 'SERVO_SG90':
+      case 'SERVO_MG996R':
+        return <Disc className="text-cyan-400" size={18} />;
       case 'BATTERY_PACK':
-        return <Battery className="text-rose-400" size={18} />;
+      case 'SERVO_POWER_SUPPLY':
+        return <Battery className="text-emerald-400" size={18} />;
       case 'GROUND_BUS':
+      case 'BREADBOARD':
         return <Sliders className="text-slate-400" size={18} />;
       case 'HC_SR04':
+      case 'IR_SENSOR_ARRAY_8CH':
         return <Radio className="text-blue-400" size={18} />;
       default:
         return <Cpu className="text-[#00f0ff]" size={18} />;

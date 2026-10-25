@@ -111,4 +111,42 @@ describe('MagicSmoke Premium Dashboard Redesign Test Suite', () => {
     expect(lf?.document.components.some((c) => c.type === 'IR_SENSOR_ARRAY_8CH')).toBe(true);
     expect(lf?.document.components.some((c) => c.type === 'TB6612FNG')).toBe(true);
   });
+
+  it('verifies retro-futuristic cyberpunk tokens and atmospheric background component exist', () => {
+    const cssPath = path.resolve(__dirname, '../src/index.css');
+    const cssContent = fs.readFileSync(cssPath, 'utf-8');
+    expect(cssContent).toContain('--ms-electric-yellow: #fff000');
+    expect(cssContent).toContain('--ms-bg-base: #07081e');
+    expect(cssContent).toContain('shadow-hard-yellow');
+
+    const texturePath = path.resolve(__dirname, '../src/dashboard/textures/AtmosphericBackground.tsx');
+    expect(fs.existsSync(texturePath)).toBe(true);
+    const textureContent = fs.readFileSync(texturePath, 'utf-8');
+    expect(textureContent).toContain('ms-analog-noise');
+    expect(textureContent).toContain('feTurbulence');
+  });
+
+  it('verifies DashboardWhatsNewCarousel contains all 5 target technical illustrations from Image 2', () => {
+    const carouselPath = path.resolve(__dirname, '../src/dashboard/DashboardWhatsNewCarousel.tsx');
+    const content = fs.readFileSync(carouselPath, 'utf-8');
+    expect(content).toContain('// SIGNAL LOG');
+    expect(content).toContain('servo-robot-arm');
+    expect(content).toContain('line-follower');
+    expect(content).toContain('motor-kinematics');
+    expect(content).toContain('TRA811PNG');
+    expect(content).toContain('track-editor');
+    expect(content).toContain('mcu-simulation');
+  });
+
+  it('verifies DashboardHeroBanner includes Featured System 04 and simulation telemetry labels', () => {
+    const heroPath = path.resolve(__dirname, '../src/dashboard/DashboardHeroBanner.tsx');
+    const content = fs.readFileSync(heroPath, 'utf-8');
+    expect(content).toContain('FEATURED SYSTEM / 04');
+    expect(content).toContain('RS-LAD-SAZ');
+    expect(content).toContain('Autonomous line follower robotics lab.');
+    expect(content).toContain('Simulation ready');
+    expect(content).toContain('60 FPS');
+    expect(content).toContain('CLOSED LOOP / ACTIVE');
+    expect(content).toContain('PID-8CH');
+  });
 });
