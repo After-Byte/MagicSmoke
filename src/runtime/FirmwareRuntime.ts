@@ -17,6 +17,7 @@ export interface FirmwareRuntime {
   resume(): void;
   stop(): void;
   reset(): void;
+  hardwareReset?(): void;
   isRunning(): boolean;
   isPaused(): boolean;
   step(deltaTimeSeconds: number): void;

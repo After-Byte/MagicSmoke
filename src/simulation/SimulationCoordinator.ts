@@ -118,6 +118,10 @@ export class SimulationCoordinator {
   }
 
   public setupRuntimeBridges() {
+    this.circuit.registerResetHandler(() => {
+      this.resetMcu();
+    });
+
     this.runtime.setEvents({
       onPinStateChange: (pin: number, state: 0 | 1) => {
         const mcu = this.getActiveMcuInfo();
@@ -138,6 +142,11 @@ export class SimulationCoordinator {
         });
       },
       onSerialOutput: (text: string) => {
+        const mcu = this.getActiveMcuInfo();
+        this.circuit.setPinOutput(mcu.id, 'D1', { digital: 1, voltage: mcu.voltage });
+        setTimeout(() => {
+          this.circuit.setPinOutput(mcu.id, 'D1', { digital: 0, voltage: 0 });
+        }, 80);
         for (const cb of this.onSerialLogCallbacks) cb(text);
       },
     });
@@ -185,6 +194,13 @@ export class SimulationCoordinator {
     this.runtime.stop();
     this.leftMotor.reset();
     this.rightMotor.reset();
+    this.notify();
+  }
+
+  public resetMcu() {
+    if (this.runtime && typeof (this.runtime as any).hardwareReset === 'function') {
+      (this.runtime as any).hardwareReset();
+    }
     this.notify();
   }
 

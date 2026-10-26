@@ -1,3 +1,7 @@
+import { PinSignalInfo } from './wokwi/wokwiElements';
+
+export type { PinSignalInfo };
+
 export enum PinType {
   DIGITAL_INPUT = 'DIGITAL_INPUT',
   DIGITAL_OUTPUT = 'DIGITAL_OUTPUT',
@@ -31,6 +35,10 @@ export interface PinDefinition {
   description: string;
   nominalVoltage?: number;
   offset: { x: number; y: number }; // relative coordinate for canvas/SVG ports
+  side?: 'top' | 'bottom' | 'left' | 'right';
+  exitNormal?: { x: number; y: number };
+  signals?: PinSignalInfo[];
+  aliases?: string[];
 }
 
 export interface ComponentInstance {
@@ -61,6 +69,8 @@ export interface WireConnection {
   toComponentId: string;
   toPinId: string;
   color?: string;
+  waypoints?: Array<{ x: number; y: number }>;
+  routingType?: 'orthogonal' | 'bezier';
 }
 
 export interface CircuitStateSnapshot {

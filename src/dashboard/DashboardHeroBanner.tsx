@@ -1,4 +1,5 @@
 import React from 'react';
+import autonomousRobotImg from '../assets/autonomous-robot.jpg';
 
 interface DashboardHeroBannerProps {
   onLaunchLineFollowerLab: () => void;
@@ -13,185 +14,43 @@ export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = ({
 }) => {
   return (
     <section
-      className="hero-card mb-12 border-2 border-[#FFEA00] grid grid-cols-1 lg:grid-cols-[46.5%_53.5%] min-h-[350px] select-none"
+      className="hero-card mb-12 border-2 border-[#FFEA00] grid grid-cols-1 lg:grid-cols-[46.5%_53.5%] w-full min-h-[350px] select-none"
       style={{
         backgroundColor: '#110849',
         boxShadow: '10px 10px 0px #FFEA00',
         minHeight: '350px',
+        width: '100%',
       }}
     >
-      {/* Left Blueprint Grid Panel */}
+      {/* Left Visual Panel - Full-Bleed Edge-to-Edge Image */}
       <div
-        className="hero-schematic relative flex flex-col justify-between overflow-hidden border-b lg:border-b-0 lg:border-r-[1.5px] border-[#FFEA00]"
+        className="hero-schematic relative w-full h-full min-w-0 min-h-[260px] lg:min-h-0 overflow-hidden border-b lg:border-b-0 lg:border-r-[1.5px] border-[#FFEA00]"
         style={{
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          overflow: 'hidden',
           backgroundColor: '#0D063A',
-          backgroundImage:
-            'linear-gradient(to right, rgba(255, 234, 0, 0.42) 1px, transparent 1px), linear-gradient(to bottom, rgba(255, 234, 0, 0.42) 1px, transparent 1px)',
-          backgroundSize: '29.5px 29.5px',
-          backgroundPosition: '-1px -1px',
         }}
       >
-        {/* Subtle radial vignette inside blueprint so center glow pops */}
-        <div
-          className="absolute inset-0 pointer-events-none"
+        <img
+          src={autonomousRobotImg}
+          alt="Autonomous line follower robot"
+          className="absolute inset-0 w-full h-full object-cover object-center"
           style={{
-            background:
-              'radial-gradient(circle at 52% 52%, rgba(255, 230, 0, 0.12) 0%, rgba(10, 4, 42, 0.45) 85%)',
+            position: 'absolute',
+            inset: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
           }}
         />
-
-        {/* Top Grid Row: FEATURED SYSTEM / 04 and RS-LAD-SAZ directly in top row above a full-width yellow border */}
-        <div
-          className="schematic-top-row relative z-10 flex items-center justify-between px-5 font-mono text-xs font-semibold text-[#FFF36D] tracking-widest border-b-[1.5px] border-[#FFEA00]"
-          style={{ height: '44px' }}
-        >
-          <span>FEATURED SYSTEM / 04</span>
-          <span>RS-LAD-SAZ</span>
-        </div>
-
-        {/* Central Schematic Canvas with Strong SVG Neon Glow Filter */}
-        <div className="schematic-canvas relative z-10 flex-1 flex items-center justify-center p-3">
-          <svg className="schematic-svg w-[92%] h-[195px] overflow-visible" viewBox="0 0 500 240" fill="none">
-            <defs>
-              <filter id="neon-glow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur stdDeviation="5" result="blur1" />
-                <feGaussianBlur stdDeviation="12" result="blur2" />
-                <feMerge>
-                  <feMergeNode in="blur2" />
-                  <feMergeNode in="blur1" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            </defs>
-
-            {/* Callout Label Top Left */}
-            <text
-              x="64"
-              y="42"
-              fill="#FFF36D"
-              fontFamily="ui-monospace, monospace"
-              fontSize="11"
-              letterSpacing="0.06em"
-              fontWeight="600"
-            >
-              CLOSED LOOP / ACTIVE
-            </text>
-            <line
-              x1="120"
-              y1="48"
-              x2="120"
-              y2="112"
-              stroke="#FFEA00"
-              strokeWidth="1.2"
-              opacity="0.8"
-            />
-
-            {/* Glowing S-Curve Line Follower Track */}
-            <path
-              d="M 62 156 C 95 102, 145 148, 195 128 C 255 104, 290 66, 338 82 C 378 96, 412 126, 442 146"
-              stroke="#FFEA00"
-              strokeWidth="6"
-              strokeLinecap="round"
-              filter="url(#neon-glow)"
-            />
-
-            {/* Robot Chassis (UNO R3) with Neon Glow */}
-            <g filter="url(#neon-glow)">
-              {/* Left & Right Wheels */}
-              <rect x="195" y="105" width="10" height="36" rx="3" fill="#FFEA00" />
-              <rect x="307" y="105" width="10" height="36" rx="3" fill="#FFEA00" />
-              {/* Main Chassis Body */}
-              <rect
-                x="208"
-                y="98"
-                width="96"
-                height="50"
-                rx="8"
-                fill="#100846"
-                stroke="#FFEA00"
-                strokeWidth="3.5"
-              />
-              {/* Inner UNO Board Outline */}
-              <rect
-                x="234"
-                y="112"
-                width="44"
-                height="22"
-                stroke="#FFEA00"
-                strokeWidth="1.5"
-                fill="#0B0536"
-              />
-              <text
-                x="242"
-                y="126"
-                fill="#FFEA00"
-                fontFamily="ui-monospace, monospace"
-                fontSize="9"
-                fontWeight="700"
-              >
-                UNO R3
-              </text>
-              {/* Corner Mounting Pins */}
-              <circle cx="216" cy="104" r="2" fill="#FFEA00" />
-              <circle cx="296" cy="104" r="2" fill="#FFEA00" />
-              <circle cx="216" cy="142" r="2" fill="#FFEA00" />
-              <circle cx="296" cy="142" r="2" fill="#FFEA00" />
-              {/* Bottom 8-Channel IR Sensor Bar */}
-              <rect
-                x="233"
-                y="148"
-                width="46"
-                height="10"
-                rx="2"
-                fill="#100846"
-                stroke="#FFEA00"
-                strokeWidth="2.5"
-              />
-              <circle cx="240" cy="153" r="1.6" fill="#FFEA00" />
-              <circle cx="248" cy="153" r="1.6" fill="#FFEA00" />
-              <circle cx="256" cy="153" r="1.6" fill="#FFEA00" />
-              <circle cx="264" cy="153" r="1.6" fill="#FFEA00" />
-              <circle cx="272" cy="153" r="1.6" fill="#FFEA00" />
-            </g>
-
-            {/* Dashed Datum Line & PID Label */}
-            <line
-              x1="60"
-              y1="176"
-              x2="438"
-              y2="176"
-              stroke="#FFEA00"
-              strokeWidth="1.4"
-              strokeDasharray="5 6"
-              opacity="0.85"
-            />
-            <text
-              x="355"
-              y="197"
-              fill="#FFF36D"
-              fontFamily="ui-monospace, monospace"
-              fontSize="11"
-              letterSpacing="0.06em"
-              fontWeight="600"
-            >
-              PID-8CH
-            </text>
-          </svg>
-        </div>
-
-        {/* Schematic Status Footer */}
-        <div className="schematic-footer relative z-10 flex items-center gap-2.5 px-5 py-3.5 font-mono text-sm text-[#FFF36D]">
-          <span
-            className="status-dot w-2.5 h-2.5 rounded-full bg-[#FFEA00]"
-            style={{ boxShadow: '0 0 8px #FFEA00' }}
-          />
-          <span>Simulation ready • 60 FPS</span>
-        </div>
       </div>
 
       {/* Right Hero Content */}
       <div
-        className="hero-details flex flex-col justify-center"
+        className="hero-details flex flex-col justify-center min-w-0"
         style={{
           padding: '24px 44px 22px 40px',
           background: 'linear-gradient(135deg, #12094D 0%, #0E0640 100%)',

@@ -1161,6 +1161,8 @@ export const LineFollowerLab: React.FC<LineFollowerLabProps> = ({
                   circuit={coordinatorRef.current.circuit}
                   onWiresChange={() => {}}
                   onComponentsChange={() => {}}
+                  onResetMcu={() => coordinatorRef.current?.resetMcu()}
+                  isSimulating={isRunning}
                 />
               )}
             </div>
