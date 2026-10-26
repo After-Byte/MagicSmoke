@@ -2,7 +2,7 @@ import { ProjectDocument, validateProjectDocument } from './types';
 import { createDefaultProject, DEFAULT_SKETCH, CANONICAL_PIN_MAPPING } from './defaultProject';
 import { createStarterLineFollower } from './lineFollowerProject';
 import { createStarterRobotArm } from './robotArmProject';
-import { createESP32DevKit, createTB6612FNG, createBatteryPack, createN20Motor } from '../circuit/components';
+import { createESP32DevKit, createArduinoUno, createTB6612FNG, createBatteryPack, createN20Motor } from '../circuit/components';
 import { WireConnection } from '../circuit/types';
 
 export { createStarterLineFollower } from './lineFollowerProject';
@@ -133,6 +133,66 @@ void loop() {
 }
 
 /**
+ * Safely migrates and canonicalizes component instances in stored projects to ensure
+ * hardware-authentic dimensions, pin maps, and wire connectivity.
+ */
+function migrateStoredProject(project: StoredProject): boolean {
+  let changed = false;
+  if (!project.document || !Array.isArray(project.document.components)) return false;
+
+  // If this is a canonical starter lab, keep it synchronized with the latest starter template
+  if (project.isStarter) {
+    let freshStarter: StoredProject | null = null;
+    if (project.id === 'starter_line_follower_robot') freshStarter = createStarterLineFollower();
+    else if (project.id === 'starter_servo_robot_arm') freshStarter = createStarterRobotArm();
+    else if (project.id === 'starter_2wd_robot') freshStarter = createStarter2WDRobot();
+    else if (project.id === 'starter_dual_motor_bench') freshStarter = createStarterDualMotorBench();
+    else if (project.id === 'starter_minimal_esp32') freshStarter = createStarterMinimalESP32();
+
+    if (freshStarter) {
+      project.document = freshStarter.document;
+      project.name = freshStarter.name;
+      project.description = freshStarter.description;
+      return true;
+    }
+  }
+
+  // For user-created circuits: canonicalize hardware definitions while preserving user wiring & positions
+  for (const comp of project.document.components) {
+    if (comp.type === 'ESP32_DEVKIT_V1') {
+      const canonical = createESP32DevKit(comp.id, comp.position);
+      if (
+        comp.dimensions?.width !== canonical.dimensions?.width ||
+        comp.dimensions?.height !== canonical.dimensions?.height ||
+        Object.keys(comp.pins).length !== Object.keys(canonical.pins).length
+      ) {
+        comp.dimensions = canonical.dimensions;
+        comp.pins = { ...canonical.pins };
+        for (const [pId, pDef] of Object.entries(canonical.pins)) {
+          comp.pins[pId] = pDef;
+        }
+        changed = true;
+      }
+    } else if (comp.type === 'ARDUINO_UNO_R3') {
+      const canonical = createArduinoUno(comp.id, comp.position);
+      if (
+        comp.dimensions?.width !== canonical.dimensions?.width ||
+        comp.dimensions?.height !== canonical.dimensions?.height ||
+        Object.keys(comp.pins).length !== Object.keys(canonical.pins).length
+      ) {
+        comp.dimensions = canonical.dimensions;
+        for (const [pId, pDef] of Object.entries(canonical.pins)) {
+          comp.pins[pId] = pDef;
+        }
+        changed = true;
+      }
+    }
+  }
+
+  return changed;
+}
+
+/**
  * Retrieve all stored projects from localStorage. Initializes starters if empty.
  */
 export function getAllStoredProjects(): StoredProject[] {
@@ -162,6 +222,11 @@ export function getAllStoredProjects(): StoredProject[] {
       return initial;
     }
     let modified = false;
+    for (const proj of parsed) {
+      if (migrateStoredProject(proj)) {
+        modified = true;
+      }
+    }
     if (!parsed.some((p: StoredProject) => p.id === 'starter_line_follower_robot')) {
       parsed.unshift(createStarterLineFollower());
       modified = true;
@@ -215,7 +280,7 @@ export function saveStoredProject(doc: ProjectDocument, existingId?: string): St
   }
 
   // Create new project
-  const newId = `proj_${now}_${Math.random().toString(36).substring(2, 7)}`;
+  const newId = existingId || `proj_${now}_${Math.random().toString(36).substring(2, 7)}`;
   const newProject: StoredProject = {
     id: newId,
     name: doc.name || 'Untitled Circuit',

@@ -138,15 +138,13 @@ describe('MagicSmoke Premium Dashboard Redesign Test Suite', () => {
     expect(content).toContain('mcu-simulation');
   });
 
-  it('verifies DashboardHeroBanner includes Featured System 04 and simulation telemetry labels', () => {
+  it('verifies DashboardHeroBanner includes autonomous robot image and hero details', () => {
     const heroPath = path.resolve(__dirname, '../src/dashboard/DashboardHeroBanner.tsx');
     const content = fs.readFileSync(heroPath, 'utf-8');
-    expect(content).toContain('FEATURED SYSTEM / 04');
-    expect(content).toContain('RS-LAD-SAZ');
     expect(content).toContain('Autonomous line follower robotics lab.');
-    expect(content).toContain('Simulation ready');
-    expect(content).toContain('60 FPS');
-    expect(content).toContain('CLOSED LOOP / ACTIVE');
-    expect(content).toContain('PID-8CH');
+    expect(content).toContain('autonomousRobotImg');
+    expect(content).toContain('object-cover');
+    expect(content).toContain('object-center');
+    expect(content).toContain('inset-0');
   });
 });

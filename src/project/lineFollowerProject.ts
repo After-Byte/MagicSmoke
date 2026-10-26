@@ -265,11 +265,11 @@ export function createLineFollowerProject(): ProjectDocument {
   const components = [
     createArduinoUno('uno_1', { x: 40, y: 50 }),
     createIRSensorArray8CH('ir_array_1', { x: 40, y: 440 }),
-    createTB6612FNG('tb6612_1', { x: 380, y: 50 }),
-    createBatteryPack('batt_1', { x: 380, y: 390 }),
-    createGroundBus('gnd_bus_1', { x: 380, y: 510 }),
-    createN20Motor('motor_left', 'Left N20 Motor', { x: 670, y: 60 }),
-    createN20Motor('motor_right', 'Right N20 Motor', { x: 670, y: 240 }),
+    createTB6612FNG('tb6612_1', { x: 440, y: 50 }),
+    createBatteryPack('batt_1', { x: 440, y: 390 }),
+    createGroundBus('gnd_bus_1', { x: 440, y: 510 }),
+    createN20Motor('motor_left', 'Left N20 Motor', { x: 730, y: 60 }),
+    createN20Motor('motor_right', 'Right N20 Motor', { x: 730, y: 240 }),
   ];
 
   const wires: WireConnection[] = [

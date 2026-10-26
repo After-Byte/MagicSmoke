@@ -218,6 +218,10 @@ export class ArduinoInterpreter {
     return res;
   }
 
+  public getGlobalVariable(name: string): number | string | boolean | undefined {
+    return this.globalScope.get(name);
+  }
+
   public resetEnvironment() {
     this.globalScope.clear();
     this.functions.clear();
@@ -318,6 +322,44 @@ export class ArduinoInterpreter {
 
   public resume() {
     this.isPaused = false;
+  }
+
+  public hardwareReset(): void {
+    for (const [pin, state] of this.pinStates.entries()) {
+      if (state.mode === PinMode.OUTPUT || state.dutyFraction > 0 || state.digital !== 0) {
+        state.digital = 0;
+        state.dutyFraction = 0;
+        if (this.events.onPinStateChange) {
+          this.events.onPinStateChange(pin, 0, state.mode);
+        }
+        if (this.events.onPWMChange) {
+          this.events.onPWMChange(pin, 0, state.frequency, state.resolutionBits);
+        }
+      }
+    }
+    this.ledcChannels.clear();
+    this.virtualTimeMs = 0;
+    this.loopFiber = undefined;
+
+    if (this.events.onSerialOutput) {
+      this.events.onSerialOutput('\r\n[MCU-Reset] Hardware Reset Triggered (ATmega328P)\r\n');
+      this.events.onSerialOutput('[MCU-Reset] Re-executing setup()...\r\n');
+    }
+
+    if (this.events.onPinStateChange) {
+      this.events.onPinStateChange(13, 1, PinMode.OUTPUT);
+      setTimeout(() => {
+        this.events.onPinStateChange?.(13, 0, PinMode.OUTPUT);
+      }, 150);
+    }
+
+    if (this.setupFunction) {
+      this.executeFunction(this.setupFunction, []);
+    }
+
+    if (this.loopFunction && this.isRunning) {
+      this.loopFiber = new StatementFiber(this.loopFunction.body, new Map());
+    }
   }
 
   public stop() {

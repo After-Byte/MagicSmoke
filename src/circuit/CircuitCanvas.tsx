@@ -1,21 +1,34 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { CircuitEngine } from './CircuitEngine';
 import { ComponentInstance, WireConnection, PinDefinition, PinType } from './types';
-import { Trash2, Cpu, Zap, Battery, Disc, ZoomIn, ZoomOut, Maximize2, Move, AlertCircle, Palette } from 'lucide-react';
+import { Trash2, Cpu, Zap, Battery, Disc, ZoomIn, ZoomOut, Maximize2, Move, AlertCircle, Palette, CornerDownRight, Spline, RotateCcw } from 'lucide-react';
 import { ComponentPalette } from './ComponentPalette';
+import { ArduinoUnoR3Board } from './ArduinoUnoR3Board';
+import { ESP32DevKitV1Board } from './ESP32DevKitV1Board';
 import { CatalogItem } from './ComponentCatalog';
+import {
+  computeManhattanWireRoute,
+  computeSmartWireBezier,
+  BoundingBox,
+  Point,
+  WireSegment,
+} from './wireRouting';
+import { resolveComponentPin, getPinExitVector } from './wokwi/pinAliasMapper';
 
 interface CircuitCanvasProps {
   circuit: CircuitEngine;
   onWiresChange: (wires: WireConnection[]) => void;
   onComponentMove?: (id: string, x: number, y: number) => void;
   onComponentsChange?: (components: ComponentInstance[]) => void;
+  onResetMcu?: () => void;
+  isSimulating?: boolean;
 }
 
 interface DragConnectingState {
   fromCompId: string;
   fromPinId: string;
-  currentWorldPos: { x: number; y: number };
+  currentWorldPos: Point;
+  waypoints: Point[];
   target: {
     compId: string;
     pinId: string;
@@ -24,10 +37,24 @@ interface DragConnectingState {
   } | null;
 }
 
+interface DraggingSegmentState {
+  wireId: string;
+  segmentIndex: number;
+  orientation: 'horizontal' | 'vertical';
+  initialMidpoint: Point;
+  initialWaypoints: Point[];
+  routePoints: Point[];
+}
+
+interface DraggingWaypointState {
+  wireId: string;
+  waypointIndex: number;
+}
+
 function getWireColor(pin?: PinDefinition): string {
   if (!pin) return '#00f0ff';
-  if (pin.id === 'GND' || pin.id === 'NEG' || pin.id === 'GND1' || pin.id === 'GND2' || pin.id === 'GND3' || pin.id === 'GND4' || pin.type === PinType.GROUND) return '#64748b';
-  if (pin.id === '3V3' || pin.id === 'VCC' || pin.id === '5V' || pin.id === 'POS' || pin.id === 'VCC1' || pin.id === 'VCC2' || pin.id === 'VCC3' || pin.id === 'VCC4' || pin.type === PinType.POWER_VCC) return '#06b6d4';
+  if (pin.id === 'GND' || pin.id === 'NEG' || pin.id === 'GND1' || pin.id === 'GND2' || pin.id === 'GND3' || pin.id === 'GND4' || pin.id.startsWith('GND') || pin.type === PinType.GROUND) return '#64748b';
+  if (pin.id === '3V3' || pin.id === '3.3V' || pin.id === 'VCC' || pin.id === '5V' || pin.id === 'POS' || pin.id === 'VCC1' || pin.id === 'VCC2' || pin.id === 'VCC3' || pin.id === 'VCC4' || pin.type === PinType.POWER_VCC) return '#06b6d4';
   if (pin.id === 'VM' || pin.id === 'VIN' || pin.type === PinType.POWER_VM) return '#f59e0b';
   if (pin.id === 'STBY') return '#10b981';
   if (pin.id === 'SIG') return '#f97316';
@@ -35,6 +62,14 @@ function getWireColor(pin?: PinDefinition): string {
   if (pin.id === 'AO1' || pin.id === 'BO1' || pin.id === 'M_POS') return '#ef4444';
   if (pin.id === 'AO2' || pin.id === 'BO2' || pin.id === 'M_NEG') return '#334155';
   return '#3b82f6';
+}
+
+function getPinNormal(
+  comp?: ComponentInstance,
+  pin?: PinDefinition
+): { x: number; y: number } {
+  const vec = getPinExitVector(comp, pin);
+  return { x: vec.x, y: vec.y };
 }
 
 function computeWireBezier(from: { x: number; y: number }, to: { x: number; y: number }) {
@@ -49,6 +84,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   onWiresChange,
   onComponentMove,
   onComponentsChange,
+  onResetMcu,
+  isSimulating = false,
 }) => {
   const [components, setComponents] = useState<ComponentInstance[]>([]);
   const [wires, setWires] = useState<WireConnection[]>([]);
@@ -74,6 +111,17 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
   // Component Dragging State
   const [draggingCompId, setDraggingCompId] = useState<string | null>(null);
   const compDragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Wire Segment & Waypoint Dragging State
+  const [draggingSegment, setDraggingSegment] = useState<DraggingSegmentState | null>(null);
+  const draggingSegmentRef = useRef<DraggingSegmentState | null>(null);
+  draggingSegmentRef.current = draggingSegment;
+
+  const [draggingWaypoint, setDraggingWaypoint] = useState<DraggingWaypointState | null>(null);
+  const draggingWaypointRef = useRef<DraggingWaypointState | null>(null);
+  draggingWaypointRef.current = draggingWaypoint;
+
+  const [defaultRoutingType, setDefaultRoutingType] = useState<'orthogonal' | 'bezier'>('orthogonal');
 
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -102,12 +150,12 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     [pan, scale]
   );
 
-  // Compute exact absolute coordinate of a pin in world space
+  // Compute exact absolute coordinate of a pin in world space (with Wokwi alias support)
   const getPinPos = useCallback(
     (compId: string, pinId: string): { x: number; y: number } => {
       const comp = circuit.getComponent(compId);
       if (!comp) return { x: 0, y: 0 };
-      const pin = comp.pins[pinId];
+      const pin = resolveComponentPin(comp, pinId);
       if (!pin) return { x: comp.position.x, y: comp.position.y };
       return {
         x: comp.position.x + pin.offset.x,
@@ -115,6 +163,30 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       };
     },
     [circuit]
+  );
+
+  const handleToggleWireRouting = useCallback(
+    (wireId: string) => {
+      const wire = circuit.getWire(wireId);
+      if (wire) {
+        wire.routingType = (wire.routingType || defaultRoutingType) === 'bezier' ? 'orthogonal' : 'bezier';
+        refreshState();
+        onWiresChange(circuit.getAllWires());
+      }
+    },
+    [circuit, defaultRoutingType, onWiresChange, refreshState]
+  );
+
+  const handleClearWireWaypoints = useCallback(
+    (wireId: string) => {
+      const wire = circuit.getWire(wireId);
+      if (wire) {
+        wire.waypoints = undefined;
+        refreshState();
+        onWiresChange(circuit.getAllWires());
+      }
+    },
+    [circuit, onWiresChange, refreshState]
   );
 
   // Safe Wire Deletion (used by button and keyboard delete)
@@ -136,6 +208,45 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     setSelectedWireId(wireId);
     setSelectedComponentId(null);
   }, []);
+
+  const handleSegmentPointerDown = useCallback(
+    (
+      wireId: string,
+      segment: WireSegment,
+      routePoints: Point[],
+      e: React.PointerEvent
+    ) => {
+      e.stopPropagation();
+      e.preventDefault();
+      const wire = circuit.getWire(wireId);
+      if (!wire) return;
+      setDraggingSegment({
+        wireId,
+        segmentIndex: segment.index,
+        orientation: segment.orientation,
+        initialMidpoint: segment.midpoint,
+        initialWaypoints: wire.waypoints ? [...wire.waypoints] : [],
+        routePoints,
+      });
+    },
+    [circuit]
+  );
+
+  const handleWaypointPointerDown = useCallback(
+    (
+      wireId: string,
+      waypointIndex: number,
+      e: React.PointerEvent
+    ) => {
+      e.stopPropagation();
+      e.preventDefault();
+      setDraggingWaypoint({
+        wireId,
+        waypointIndex,
+      });
+    },
+    []
+  );
 
   const handleAddComponent = useCallback(
     (item: CatalogItem) => {
@@ -272,7 +383,50 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         );
       }
 
-      // 2. Handling Component Dragging
+      // 2. Handling Wire Segment Dragging (Adjusting Orthogonal Bus)
+      if (draggingSegmentRef.current) {
+        const worldPos = clientToWorld(e.clientX, e.clientY);
+        const { wireId, segmentIndex, orientation, initialMidpoint, routePoints } = draggingSegmentRef.current;
+        const wire = circuit.getWire(wireId);
+        if (wire) {
+          if (orientation === 'horizontal') {
+            const dy = worldPos.y - initialMidpoint.y;
+            const targetY = Math.round(initialMidpoint.y + dy);
+            const segStart = routePoints[segmentIndex];
+            const segEnd = routePoints[segmentIndex + 1];
+            wire.waypoints = [
+              { x: segStart.x, y: targetY },
+              { x: segEnd.x, y: targetY },
+            ];
+          } else {
+            const dx = worldPos.x - initialMidpoint.x;
+            const targetX = Math.round(initialMidpoint.x + dx);
+            const segStart = routePoints[segmentIndex];
+            const segEnd = routePoints[segmentIndex + 1];
+            wire.waypoints = [
+              { x: targetX, y: segStart.y },
+              { x: targetX, y: segEnd.y },
+            ];
+          }
+          refreshState();
+        }
+      }
+
+      // 3. Handling Wire Waypoint Dragging
+      if (draggingWaypointRef.current) {
+        const worldPos = clientToWorld(e.clientX, e.clientY);
+        const { wireId, waypointIndex } = draggingWaypointRef.current;
+        const wire = circuit.getWire(wireId);
+        if (wire && wire.waypoints && wire.waypoints[waypointIndex]) {
+          wire.waypoints[waypointIndex] = {
+            x: Math.round(worldPos.x),
+            y: Math.round(worldPos.y),
+          };
+          refreshState();
+        }
+      }
+
+      // 4. Handling Component Dragging
       if (draggingCompId) {
         const worldPos = clientToWorld(e.clientX, e.clientY);
         const comp = circuit.getComponent(draggingCompId);
@@ -285,7 +439,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         }
       }
 
-      // 3. Handling Canvas Panning
+      // 5. Handling Canvas Panning
       if (isPanning) {
         setPan({
           x: e.clientX - panStartRef.current.x,
@@ -295,6 +449,19 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     };
 
     const handleWindowPointerUp = () => {
+      // Release segment or waypoint drag
+      if (draggingSegmentRef.current) {
+        setDraggingSegment(null);
+        onWiresChange(circuit.getAllWires());
+        refreshState();
+      }
+
+      if (draggingWaypointRef.current) {
+        setDraggingWaypoint(null);
+        onWiresChange(circuit.getAllWires());
+        refreshState();
+      }
+
       // Commit wire connection if released over valid target
       if (dragConnectingRef.current) {
         const { fromCompId, fromPinId } = dragConnectingRef.current;
@@ -312,7 +479,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
         if (target && target.isValid) {
           const sourceComp = circuit.getComponent(fromCompId);
-          const sourcePin = sourceComp?.pins[fromPinId];
+          const sourcePin = resolveComponentPin(sourceComp, fromPinId);
 
           const newWire: WireConnection = {
             id: `w_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
@@ -321,6 +488,8 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
             toComponentId: target.compId,
             toPinId: target.pinId,
             color: getWireColor(sourcePin),
+            waypoints: dragConnectingRef.current.waypoints.length > 0 ? dragConnectingRef.current.waypoints : undefined,
+            routingType: defaultRoutingType,
           };
 
           const added = circuit.addWire(newWire);
@@ -349,8 +518,22 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
     };
   }, [clientToWorld, circuit, draggingCompId, isPanning, onComponentMove, onWiresChange, refreshState]);
 
-  // Canvas Background Mouse Down -> Pan Canvas
+  // Canvas Background Mouse Down -> Pan Canvas or Drop Wire Waypoint
   const handleCanvasPointerDown = (e: React.PointerEvent) => {
+    // If active wire connection is being drawn, clicking canvas drops a corner waypoint
+    if (dragConnectingRef.current) {
+      const worldPos = clientToWorld(e.clientX, e.clientY);
+      setDragConnecting((prev) =>
+        prev
+          ? {
+              ...prev,
+              waypoints: [...(prev.waypoints || []), worldPos],
+            }
+          : null
+      );
+      return;
+    }
+
     // Only deselect / pan if the click was directly on the background (svg or grid rect)
     const target = e.target as HTMLElement | SVGElement | null;
     const isBackground =
@@ -359,8 +542,6 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       target === svgRef.current ||
       target.tagName === 'svg' ||
       (target.tagName === 'rect' && target.getAttribute('fill')?.includes('circuitGrid'));
-
-    console.log('[CANVAS] pointerdown on:', target?.tagName, target?.className, 'isBackground:', isBackground);
 
     if (isBackground && (e.button === 0 || e.button === 1)) {
       setIsPanning(true);
@@ -401,7 +582,6 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
 
   // Start dragging a wire connection from a pin
   const handlePinPointerDown = (compId: string, pinId: string, e: React.PointerEvent) => {
-    console.log('[PIN] pointerdown on:', compId, pinId, 'button:', e.button);
     if (e.button !== 0) return;
     e.stopPropagation();
     e.preventDefault();
@@ -411,6 +591,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
       fromCompId: compId,
       fromPinId: pinId,
       currentWorldPos: worldPos,
+      waypoints: [],
       target: null,
     });
   };
@@ -467,8 +648,49 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
           <Maximize2 size={13} />
         </button>
 
+        <div className="h-3.5 w-px bg-[#26354a] mx-1" />
+
+        <button
+          onClick={() => setDefaultRoutingType((t) => (t === 'orthogonal' ? 'bezier' : 'orthogonal'))}
+          className="flex items-center gap-1 text-[#94a3b8] hover:text-[#00f0ff] px-2 py-0.5 rounded hover:bg-[#1b2434] transition-colors text-[11px]"
+          title="Toggle Default Wire Routing (Orthogonal Manhattan / Smooth Bezier)"
+          data-testid="toggle-default-routing-btn"
+        >
+          {defaultRoutingType === 'orthogonal' ? (
+            <>
+              <CornerDownRight size={12} className="text-[#00f0ff]" />
+              <span className="hidden sm:inline">Manhattan</span>
+            </>
+          ) : (
+            <>
+              <Spline size={12} className="text-[#a855f7]" />
+              <span className="hidden sm:inline">Curved</span>
+            </>
+          )}
+        </button>
+
         {selectedWireId && (
           <>
+            <div className="h-3.5 w-px bg-[#26354a] mx-1" />
+            <button
+              onClick={() => handleToggleWireRouting(selectedWireId)}
+              className="flex items-center gap-1 text-[#38bdf8] hover:text-white bg-[#0369a1]/30 hover:bg-[#0284c7] px-2 py-0.5 rounded border border-[#0284c7]/50 transition-all font-mono text-[11px] cursor-pointer shadow-sm"
+              title="Toggle Orthogonal / Bezier Routing"
+              data-testid="toggle-wire-routing-btn"
+            >
+              <Spline size={11} />
+              {(circuit.getWire(selectedWireId)?.routingType || defaultRoutingType) === 'bezier' ? 'Orthogonal' : 'Curved'}
+            </button>
+            {circuit.getWire(selectedWireId)?.waypoints && (circuit.getWire(selectedWireId)?.waypoints?.length ?? 0) > 0 && (
+              <button
+                onClick={() => handleClearWireWaypoints(selectedWireId)}
+                className="flex items-center gap-1 text-[#f59e0b] hover:text-white bg-[#b45309]/20 hover:bg-[#d97706] px-2 py-0.5 rounded border border-[#f59e0b]/40 transition-all font-mono text-[11px] cursor-pointer shadow-sm ml-1"
+                title="Reset manual waypoints"
+                data-testid="clear-wire-waypoints-btn"
+              >
+                <RotateCcw size={11} /> Reset Route
+              </button>
+            )}
             <div className="h-3.5 w-px bg-[#26354a] mx-1" />
             <span className="text-[#94a3b8] text-[10px] hidden sm:inline">Color:</span>
             <div className="flex items-center gap-1" data-testid="wire-color-picker">
@@ -568,94 +790,239 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
         <rect width="100%" height="100%" fill="url(#circuitGrid)" />
 
         <g transform={`translate(${pan.x}, ${pan.y}) scale(${scale})`}>
-          {/* Permanent Circuit Wires */}
-          {wires.map((wire) => {
-            const from = getPinPos(wire.fromComponentId, wire.fromPinId);
-            const to = getPinPos(wire.toComponentId, wire.toPinId);
-            const isSelected = selectedWireId === wire.id;
-            const path = computeWireBezier(from, to);
+          {/* Obstacle boxes for Manhattan routing around component bodies */}
+          {(() => {
+            const obstacleBoxes: BoundingBox[] = components.map((c) => ({
+              x: c.position.x,
+              y: c.position.y,
+              width: c.dimensions?.width ?? 180,
+              height: c.dimensions?.height ?? 220,
+            }));
 
             return (
-              <g
-                key={wire.id}
-                onPointerDown={(e) => handleWireSelect(wire.id, e)}
-                onMouseDown={(e) => handleWireSelect(wire.id, e)}
-                onClick={(e) => handleWireSelect(wire.id, e)}
-                className="cursor-pointer group"
-                data-testid={`wire-${wire.id}`}
-              >
-                {/* Wide invisible hit path for easy wire selection */}
-                <path
-                  d={path}
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeOpacity="0.001"
-                  strokeWidth="24"
-                  style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
-                  onPointerDown={(e) => handleWireSelect(wire.id, e)}
-                  onMouseDown={(e) => handleWireSelect(wire.id, e)}
-                  onClick={(e) => handleWireSelect(wire.id, e)}
-                />
+              <>
+                {/* Permanent Circuit Wires */}
+                {wires.map((wire) => {
+                  const fromComp = circuit.getComponent(wire.fromComponentId);
+                  const toComp = circuit.getComponent(wire.toComponentId);
+                  const fromPin = fromComp ? resolveComponentPin(fromComp, wire.fromPinId) : undefined;
+                  const toPin = toComp ? resolveComponentPin(toComp, wire.toPinId) : undefined;
 
-                {/* Selection Halo */}
-                {isSelected && (
-                  <path
-                    d={path}
-                    fill="none"
-                    stroke="#f43f5e"
-                    strokeWidth="6"
-                    strokeOpacity="0.4"
-                    filter="url(#wireGlow)"
-                    style={{ pointerEvents: 'none' }}
-                  />
-                )}
+                  const from = getPinPos(wire.fromComponentId, wire.fromPinId);
+                  const to = getPinPos(wire.toComponentId, wire.toPinId);
+                  const fromNormal = getPinNormal(fromComp, fromPin);
+                  const toNormal = getPinNormal(toComp, toPin);
 
-                {/* Visible Wire Body */}
-                <path
-                  d={path}
-                  fill="none"
-                  stroke={isSelected ? '#f43f5e' : wire.color || '#00f0ff'}
-                  strokeWidth={isSelected ? '3.5' : '2'}
-                  strokeLinecap="round"
-                  style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
-                  onPointerDown={(e) => handleWireSelect(wire.id, e)}
-                  onMouseDown={(e) => handleWireSelect(wire.id, e)}
-                  onClick={(e) => handleWireSelect(wire.id, e)}
-                  className="transition-all group-hover:stroke-[#f43f5e] group-hover:stroke-[3.5]"
-                />
-              </g>
-            );
-          })}
+                  const isSelected = selectedWireId === wire.id;
+                  const isOrthogonal = (wire.routingType || defaultRoutingType) === 'orthogonal';
 
-          {/* Active Live Temporary Wire while Dragging */}
-          {dragConnecting && (() => {
-            const from = getPinPos(dragConnecting.fromCompId, dragConnecting.fromPinId);
-            let to = dragConnecting.currentWorldPos;
+                  let wirePath = '';
+                  let routePoints: Point[] = [];
+                  let routeSegments: WireSegment[] = [];
 
-            // Snap to target pin center if hovering a pin
-            if (dragConnecting.target) {
-              to = getPinPos(dragConnecting.target.compId, dragConnecting.target.pinId);
-            }
+                  if (isOrthogonal) {
+                    const route = computeManhattanWireRoute(
+                      from,
+                      fromNormal,
+                      to,
+                      toNormal,
+                      wire.waypoints,
+                      obstacleBoxes
+                    );
+                    wirePath = route.path;
+                    routePoints = route.points;
+                    routeSegments = route.segments;
+                  } else {
+                    wirePath = computeSmartWireBezier(from, fromNormal, to, toNormal);
+                  }
 
-            const path = computeWireBezier(from, to);
-            const strokeColor = dragConnecting.target
-              ? dragConnecting.target.isValid
-                ? '#10b981'
-                : '#f43f5e'
-              : '#f59e0b';
+                  return (
+                    <g
+                      key={wire.id}
+                      onPointerDown={(e) => handleWireSelect(wire.id, e)}
+                      onMouseDown={(e) => handleWireSelect(wire.id, e)}
+                      onClick={(e) => handleWireSelect(wire.id, e)}
+                      className="cursor-pointer group"
+                      data-testid={`wire-${wire.id}`}
+                    >
+                      {/* Wide invisible hit path for easy wire selection */}
+                      <path
+                        d={wirePath}
+                        fill="none"
+                        stroke="#ffffff"
+                        strokeOpacity="0.001"
+                        strokeWidth="24"
+                        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+                        onPointerDown={(e) => handleWireSelect(wire.id, e)}
+                        onMouseDown={(e) => handleWireSelect(wire.id, e)}
+                        onClick={(e) => handleWireSelect(wire.id, e)}
+                      />
 
-            return (
-              <g pointerEvents="none">
-                <path
-                  d={path}
-                  fill="none"
-                  stroke={strokeColor}
-                  strokeWidth="2.5"
-                  strokeDasharray={dragConnecting.target ? 'none' : '5 4'}
-                  strokeLinecap="round"
-                />
-                <circle cx={to.x} cy={to.y} r="5" fill={strokeColor} />
-              </g>
+                      {/* Selection Halo */}
+                      {isSelected && (
+                        <path
+                          d={wirePath}
+                          fill="none"
+                          stroke="#f43f5e"
+                          strokeWidth="7"
+                          strokeOpacity="0.4"
+                          filter="url(#wireGlow)"
+                          style={{ pointerEvents: 'none' }}
+                        />
+                      )}
+
+                      {/* Underneath Casing Outline (Wokwi Style 4.5px Dark Housing) */}
+                      <path
+                        d={wirePath}
+                        fill="none"
+                        stroke="#0a0e14"
+                        strokeWidth={isSelected ? '5.5' : '4.5'}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ pointerEvents: 'none' }}
+                      />
+
+                      {/* Visible Colored Wire Body */}
+                      <path
+                        d={wirePath}
+                        fill="none"
+                        stroke={isSelected ? '#f43f5e' : wire.color || '#00f0ff'}
+                        strokeWidth={isSelected ? '3.5' : '2.5'}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        style={{ pointerEvents: 'stroke', cursor: 'pointer' }}
+                        onPointerDown={(e) => handleWireSelect(wire.id, e)}
+                        onMouseDown={(e) => handleWireSelect(wire.id, e)}
+                        onClick={(e) => handleWireSelect(wire.id, e)}
+                        className="transition-all group-hover:stroke-[#f43f5e] group-hover:stroke-[3.5]"
+                      />
+
+                      {/* Draggable Segment Handles (Orthogonal Parallel Bus Adjustment) */}
+                      {isSelected &&
+                        isOrthogonal &&
+                        routeSegments.map((seg, idx) => {
+                          if (seg.length < 14) return null;
+                          const isHoriz = seg.orientation === 'horizontal';
+                          return (
+                            <g key={`seg-${wire.id}-${idx}`}>
+                              <line
+                                x1={seg.start.x}
+                                y1={seg.start.y}
+                                x2={seg.end.x}
+                                y2={seg.end.y}
+                                stroke="transparent"
+                                strokeWidth="16"
+                                className={isHoriz ? 'cursor-ns-resize' : 'cursor-ew-resize'}
+                                onPointerDown={(e) => handleSegmentPointerDown(wire.id, seg, routePoints, e)}
+                              />
+                              <rect
+                                x={seg.midpoint.x - (isHoriz ? 8 : 4)}
+                                y={seg.midpoint.y - (isHoriz ? 4 : 8)}
+                                width={isHoriz ? 16 : 8}
+                                height={isHoriz ? 8 : 16}
+                                rx="3"
+                                fill="#f43f5e"
+                                stroke="#ffffff"
+                                strokeWidth="1.2"
+                                className={isHoriz ? 'cursor-ns-resize' : 'cursor-ew-resize'}
+                                onPointerDown={(e) => handleSegmentPointerDown(wire.id, seg, routePoints, e)}
+                                data-testid={`segment-handle-${wire.id}-${idx}`}
+                              />
+                            </g>
+                          );
+                        })}
+
+                      {/* Draggable Waypoint Handles */}
+                      {isSelected &&
+                        wire.waypoints?.map((wp, wpIdx) => (
+                          <circle
+                            key={`wp-${wire.id}-${wpIdx}`}
+                            cx={wp.x}
+                            cy={wp.y}
+                            r="6"
+                            fill="#38bdf8"
+                            stroke="#ffffff"
+                            strokeWidth="1.5"
+                            className="cursor-move hover:scale-125 transition-transform"
+                            onPointerDown={(e) => handleWaypointPointerDown(wire.id, wpIdx, e)}
+                            data-testid={`waypoint-handle-${wire.id}-${wpIdx}`}
+                          />
+                        ))}
+                    </g>
+                  );
+                })}
+
+                {/* Active Live Temporary Wire while Dragging */}
+                {dragConnecting && (() => {
+                  const from = getPinPos(dragConnecting.fromCompId, dragConnecting.fromPinId);
+                  let to = dragConnecting.currentWorldPos;
+
+                  // Snap to target pin center if hovering a pin
+                  if (dragConnecting.target) {
+                    to = getPinPos(dragConnecting.target.compId, dragConnecting.target.pinId);
+                  }
+
+                  const fromComp = circuit.getComponent(dragConnecting.fromCompId);
+                  const fromPin = fromComp ? resolveComponentPin(fromComp, dragConnecting.fromPinId) : undefined;
+                  const fromNormal = getPinNormal(fromComp, fromPin);
+                  let toNormal = { x: -fromNormal.x, y: -fromNormal.y };
+
+                  if (dragConnecting.target) {
+                    const tComp = circuit.getComponent(dragConnecting.target.compId);
+                    const tPin = tComp ? resolveComponentPin(tComp, dragConnecting.target.pinId) : undefined;
+                    toNormal = getPinNormal(tComp, tPin);
+                  }
+
+                  const isOrthogonal = defaultRoutingType === 'orthogonal';
+                  let tempPath = '';
+                  if (isOrthogonal) {
+                    const route = computeManhattanWireRoute(
+                      from,
+                      fromNormal,
+                      to,
+                      toNormal,
+                      dragConnecting.waypoints.length > 0 ? dragConnecting.waypoints : undefined,
+                      obstacleBoxes
+                    );
+                    tempPath = route.path;
+                  } else {
+                    tempPath = computeSmartWireBezier(from, fromNormal, to, toNormal);
+                  }
+
+                  const strokeColor = dragConnecting.target
+                    ? dragConnecting.target.isValid
+                      ? '#10b981'
+                      : '#f43f5e'
+                    : '#f59e0b';
+
+                  return (
+                    <g pointerEvents="none">
+                      <path
+                        d={tempPath}
+                        fill="none"
+                        stroke="#0a0e14"
+                        strokeWidth="4.5"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <path
+                        d={tempPath}
+                        fill="none"
+                        stroke={strokeColor}
+                        strokeWidth="2.5"
+                        strokeDasharray={dragConnecting.target ? 'none' : '5 4'}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                      <circle cx={to.x} cy={to.y} r="5" fill={strokeColor} stroke="#0a0e14" strokeWidth="1" />
+                      {/* Render intermediate dropped waypoints while drawing */}
+                      {dragConnecting.waypoints.map((wp, i) => (
+                        <circle key={`temp-wp-${i}`} cx={wp.x} cy={wp.y} r="4" fill="#f59e0b" stroke="#ffffff" strokeWidth="1" />
+                      ))}
+                    </g>
+                  );
+                })()}
+              </>
             );
           })()}
 
@@ -670,93 +1037,87 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
                 transform={`translate(${comp.position.x}, ${comp.position.y})`}
                 data-testid={`component-${comp.id}`}
               >
-                {/* Component Drag Header Bar */}
-                <g
-                  onPointerDown={(e) => handleComponentHeaderPointerDown(comp.id, e)}
-                  className="cursor-move"
-                >
-                  <rect
-                    x="0"
-                    y="0"
-                    width={width}
-                    height="28"
-                    rx="6"
-                    fill="#151b26"
-                    stroke="#222e42"
-                    strokeWidth="1.2"
-                  />
-                  <rect x="0" y="22" width={width} height="6" fill="#151b26" />
-
-                  {/* Header Title & Icon */}
-                  <text
-                    x="10"
-                    y="18"
-                    fill="#e2e8f0"
-                    fontSize="11"
-                    fontFamily="monospace"
-                    fontWeight="700"
-                    letterSpacing="0.03em"
-                    pointerEvents="none"
+                {comp.type === 'ARDUINO_UNO_R3' ? (
+                  <g
+                    onPointerDown={(e) => handleComponentHeaderPointerDown(comp.id, e)}
+                    className="cursor-move"
                   >
-                    {comp.name}
-                  </text>
-                  <circle cx={width - 14} cy="14" r="2" fill="#64748b" pointerEvents="none" />
-                  <circle cx={width - 20} cy="14" r="2" fill="#64748b" pointerEvents="none" />
-                </g>
-
-                {/* Component Board Body */}
-                {comp.type === 'ESP32_DEVKIT_V1' && (
-                  <g pointerEvents="none">
-                    {/* Dark Matte FR4 PCB Body */}
-                    <rect
-                      x="0"
-                      y="26"
-                      width={width}
-                      height={height - 26}
-                      rx="4"
-                      fill="#10141d"
-                      stroke="#222e42"
-                      strokeWidth="1.2"
+                    <ArduinoUnoR3Board
+                      component={comp}
+                      circuit={circuit}
+                      hoveredPin={hoveredPin}
+                      dragConnecting={dragConnecting}
+                      onPinPointerDown={handlePinPointerDown}
+                      onPinHoverEnter={(cId, pId) => {
+                        hoveredPinRef.current = { compId: cId, pinId: pId };
+                        setHoveredPin({ compId: cId, pinId: pId });
+                      }}
+                      onPinHoverLeave={() => {
+                        hoveredPinRef.current = null;
+                        setHoveredPin(null);
+                      }}
+                      onResetMcu={onResetMcu}
+                      isSimulating={isSimulating}
                     />
-
-                    {/* Corner Mounting Holes */}
-                    <circle cx="12" cy="38" r="3.5" fill="#080b10" stroke="#334155" strokeWidth="1" />
-                    <circle cx={width - 12} cy="38" r="3.5" fill="#080b10" stroke="#334155" strokeWidth="1" />
-                    <circle cx="12" cy={height - 12} r="3.5" fill="#080b10" stroke="#334155" strokeWidth="1" />
-                    <circle cx={width - 12} cy={height - 12} r="3.5" fill="#080b10" stroke="#334155" strokeWidth="1" />
-
-                    {/* Gold Serpentine PCB Antenna at Top */}
-                    <rect x={width / 2 - 24} y="32" width="48" height="12" rx="2" fill="url(#antennaGrad)" opacity="0.85" />
-
-                    {/* Silver ESP-WROOM-32 Metallic Shield */}
-                    <rect
-                      x={width / 2 - 38}
-                      y="52"
-                      width="76"
-                      height="80"
-                      rx="3"
-                      fill="url(#rfShieldGrad)"
-                      stroke="#64748b"
-                      strokeWidth="1"
-                    />
-                    <text x={width / 2} y="85" textAnchor="middle" fill="#0f172a" fontSize="9" fontFamily="monospace" fontWeight="700">
-                      ESP-WROOM-32
-                    </text>
-                    <text x={width / 2} y="100" textAnchor="middle" fill="#334155" fontSize="7.5" fontFamily="monospace">
-                      Xtensa LX6 240MHz
-                    </text>
-
-                    {/* Micro-USB Port at Bottom */}
-                    <rect x={width / 2 - 16} y={height - 10} width="32" height="10" rx="2" fill="#94a3b8" stroke="#475569" strokeWidth="1" />
-                    <rect x={width / 2 - 10} y={height - 6} width="20" height="6" fill="#090d14" />
-
-                    {/* Silkscreen Indicators */}
-                    <circle cx="28" cy={height - 24} r="2.5" fill="#ef4444" />
-                    <text x="34" y={height - 22} fill="#64748b" fontSize="7" fontFamily="monospace">PWR</text>
-                    <circle cx="68" cy={height - 24} r="2.5" fill="#3b82f6" />
-                    <text x="74" y={height - 22} fill="#64748b" fontSize="7" fontFamily="monospace">D2</text>
                   </g>
-                )}
+                ) : comp.type === 'ESP32_DEVKIT_V1' ? (
+                  <g
+                    onPointerDown={(e) => handleComponentHeaderPointerDown(comp.id, e)}
+                    className="cursor-move"
+                  >
+                    <ESP32DevKitV1Board
+                      component={comp}
+                      circuit={circuit}
+                      hoveredPin={hoveredPin}
+                      dragConnecting={dragConnecting}
+                      onPinPointerDown={handlePinPointerDown}
+                      onPinHoverEnter={(cId, pId) => {
+                        hoveredPinRef.current = { compId: cId, pinId: pId };
+                        setHoveredPin({ compId: cId, pinId: pId });
+                      }}
+                      onPinHoverLeave={() => {
+                        hoveredPinRef.current = null;
+                        setHoveredPin(null);
+                      }}
+                      onResetMcu={onResetMcu}
+                      isSimulating={isSimulating}
+                    />
+                  </g>
+                ) : (
+                  <>
+                    {/* Component Drag Header Bar */}
+                    <g
+                      onPointerDown={(e) => handleComponentHeaderPointerDown(comp.id, e)}
+                      className="cursor-move"
+                    >
+                      <rect
+                        x="0"
+                        y="0"
+                        width={width}
+                        height="28"
+                        rx="6"
+                        fill="#151b26"
+                        stroke="#222e42"
+                        strokeWidth="1.2"
+                      />
+                      <rect x="0" y="22" width={width} height="6" fill="#151b26" />
+
+                      {/* Header Title & Icon */}
+                      <text
+                        x="10"
+                        y="18"
+                        fill="#e2e8f0"
+                        fontSize="11"
+                        fontFamily="monospace"
+                        fontWeight="700"
+                        letterSpacing="0.03em"
+                        pointerEvents="none"
+                      >
+                        {comp.name}
+                      </text>
+                      <circle cx={width - 14} cy="14" r="2" fill="#64748b" pointerEvents="none" />
+                      <circle cx={width - 20} cy="14" r="2" fill="#64748b" pointerEvents="none" />
+                    </g>
 
                 {comp.type === 'TB6612FNG' && (
                   <g pointerEvents="none">
@@ -884,75 +1245,7 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
                   </g>
                 )}
 
-                {comp.type === 'ARDUINO_UNO_R3' && (
-                  <g pointerEvents="none">
-                    {/* Classic Arduino Teal FR4 PCB Body */}
-                    <rect
-                      x="0"
-                      y="26"
-                      width={width}
-                      height={height - 26}
-                      rx="6"
-                      fill="#005c5f"
-                      stroke="#00878f"
-                      strokeWidth="1.5"
-                    />
-
-                    {/* Mounting Holes with Gold Annular Rings */}
-                    <circle cx="14" cy="40" r="4" fill="#052c2e" stroke="#ca8a04" strokeWidth="1.2" />
-                    <circle cx={width - 14} cy="40" r="4" fill="#052c2e" stroke="#ca8a04" strokeWidth="1.2" />
-                    <circle cx="14" cy={height - 14} r="4" fill="#052c2e" stroke="#ca8a04" strokeWidth="1.2" />
-                    <circle cx={width - 14} cy={height - 14} r="4" fill="#052c2e" stroke="#ca8a04" strokeWidth="1.2" />
-
-                    {/* Silver USB Type-B Jack */}
-                    <rect x="8" y="32" width="30" height="34" rx="2" fill="#94a3b8" stroke="#475569" strokeWidth="1" />
-                    <rect x="13" y="38" width="20" height="22" fill="#090d14" rx="1" />
-                    <text x="23" y="52" textAnchor="middle" fill="#cbd5e1" fontSize="6.5" fontFamily="monospace">USB</text>
-
-                    {/* 2.1mm DC Power Barrel Jack */}
-                    <rect x="8" y={height - 48} width="36" height="32" rx="2" fill="#0f172a" stroke="#1e293b" strokeWidth="1" />
-                    <circle cx="26" cy={height - 32} r="6" fill="#334155" />
-                    <circle cx="26" cy={height - 32} r="2.5" fill="#020617" />
-
-                    {/* 16.000 MHz Silver Quartz Crystal */}
-                    <rect x="52" y="70" width="12" height="24" rx="3" fill="#cbd5e1" stroke="#64748b" strokeWidth="1" />
-                    <text x="58" y="85" textAnchor="middle" fill="#334155" fontSize="6" fontFamily="monospace" transform="rotate(-90 58 85)">16MHz</text>
-
-                    {/* Red Momentary Reset Pushbutton */}
-                    <rect x="50" y="34" width="16" height="16" rx="2" fill="#334155" />
-                    <circle cx="58" cy="42" r="5" fill="#ef4444" stroke="#b91c1c" strokeWidth="1" />
-
-                    {/* ATmega328P DIP-28 Dual In-Line IC in Socket */}
-                    <rect x={width / 2 - 14} y="95" width="38" height="130" rx="3" fill="#18181b" stroke="#3f3f46" strokeWidth="1.2" />
-                    {/* DIP Pin notches and legs */}
-                    <circle cx={width / 2 + 5} cy="102" r="3" fill="#09090b" />
-                    {[...Array(14)].map((_, i) => (
-                      <g key={i}>
-                        <rect x={width / 2 - 18} y={108 + i * 8} width="4" height="4" fill="#cbd5e1" />
-                        <rect x={width / 2 + 24} y={108 + i * 8} width="4" height="4" fill="#cbd5e1" />
-                      </g>
-                    ))}
-                    <text x={width / 2 + 5} y="165" textAnchor="middle" fill="#a1a1aa" fontSize="7.5" fontFamily="monospace" fontWeight="700" transform={`rotate(-90 ${width / 2 + 5} 165)`}>
-                      ATMEGA328P-PU
-                    </text>
-
-                    {/* Pin 13 Built-in SMD LED */}
-                    <rect x={width - 45} y="60" width="8" height="6" fill="#fef08a" stroke="#ca8a04" strokeWidth="0.8" />
-                    <circle cx={width - 41} cy="63" r="1.5" fill="#eab308" />
-                    <text x={width - 48} y="66" textAnchor="end" fill="#ca8a04" fontSize="6.5" fontFamily="monospace">L</text>
-
-                    {/* Board Silkscreen Labels */}
-                    <text x={width / 2 + 10} y="250" textAnchor="middle" fill="#f8fafc" fontSize="10.5" fontFamily="sans-serif" fontWeight="800" letterSpacing="0.5">
-                      ARDUINO
-                    </text>
-                    <text x={width / 2 + 10} y="265" textAnchor="middle" fill="#67e8f9" fontSize="8.5" fontFamily="monospace" fontWeight="700">
-                      UNO R3
-                    </text>
-                    <text x={width / 2 + 10} y="280" textAnchor="middle" fill="#cbd5e1" fontSize="6.5" fontFamily="monospace">
-                      16MHz AVR 5V
-                    </text>
-                  </g>
-                )}
+                
 
                 {comp.type === 'IR_SENSOR_ARRAY_8CH' && (
                   <g pointerEvents="none">
@@ -1176,8 +1469,12 @@ export const CircuitCanvas: React.FC<CircuitCanvasProps> = ({
                   </g>
                 )}
 
-                {/* Interactive Pins */}
-                {Object.values(comp.pins).map((pin: PinDefinition) => {
+                </>
+                )}
+
+                {/* Interactive Pins (for standard components) */}
+                {comp.type !== 'ARDUINO_UNO_R3' && comp.type !== 'ESP32_DEVKIT_V1' &&
+                  Object.values(comp.pins).map((pin: PinDefinition) => {
                   const isLeft = pin.offset.x === 0;
                   const isHovered = hoveredPin?.compId === comp.id && hoveredPin?.pinId === pin.id;
                   const isDragSource =

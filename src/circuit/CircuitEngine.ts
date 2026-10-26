@@ -1,9 +1,10 @@
 import { ComponentInstance, WireConnection, PinState, CircuitStateSnapshot } from './types';
+import { resolveComponentPin, normalizeUnoPinId } from './wokwi/pinAliasMapper';
 
 export class CircuitEngine {
   private components: Map<string, ComponentInstance> = new Map();
   private wires: Map<string, WireConnection> = new Map();
-  private pinStates: Map<string, PinState> = new Map(); // key = "componentId:pinId"
+  private pinStates: Map<string, PinState> = new Map(); // key = "componentId:canonicalPinId"
 
   constructor(components: ComponentInstance[] = [], wires: WireConnection[] = []) {
     components.forEach((c) => this.addComponent(c));
@@ -33,6 +34,16 @@ export class CircuitEngine {
   }
 
   /**
+   * Resolves a pin ID or alias on a component to its canonical ID
+   */
+  public resolvePinId(componentId: string, pinId: string): string {
+    const comp = this.components.get(componentId);
+    if (!comp) return pinId;
+    const pin = resolveComponentPin(comp, pinId);
+    return pin ? pin.id : pinId;
+  }
+
+  /**
    * Validate a proposed wire connection before adding it to the circuit
    */
   public validateConnection(
@@ -54,8 +65,8 @@ export class CircuitEngine {
       return { valid: false, reason: 'Self-connections are prohibited.' };
     }
 
-    const fromPin = fromComp.pins[fromPinId];
-    const toPin = toComp.pins[toPinId];
+    const fromPin = resolveComponentPin(fromComp, fromPinId);
+    const toPin = resolveComponentPin(toComp, toPinId);
 
     if (!fromPin) {
       return { valid: false, reason: `Pin '${fromPinId}' does not exist on '${fromComp.name}'.` };
@@ -64,12 +75,18 @@ export class CircuitEngine {
       return { valid: false, reason: `Pin '${toPinId}' does not exist on '${toComp.name}'.` };
     }
 
-    // Check for duplicate wire (in either direction)
-    const duplicate = Array.from(this.wires.values()).some(
-      (w) =>
-        (w.fromComponentId === fromCompId && w.fromPinId === fromPinId && w.toComponentId === toCompId && w.toPinId === toPinId) ||
-        (w.fromComponentId === toCompId && w.fromPinId === toPinId && w.toComponentId === fromCompId && w.toPinId === fromPinId)
-    );
+    const canonFromPinId = fromPin.id;
+    const canonToPinId = toPin.id;
+
+    // Check for duplicate wire (in either direction) comparing canonical pin endpoints
+    const duplicate = Array.from(this.wires.values()).some((w) => {
+      const wFrom = this.resolvePinId(w.fromComponentId, w.fromPinId);
+      const wTo = this.resolvePinId(w.toComponentId, w.toPinId);
+      return (
+        (w.fromComponentId === fromCompId && wFrom === canonFromPinId && w.toComponentId === toCompId && wTo === canonToPinId) ||
+        (w.fromComponentId === toCompId && wFrom === canonToPinId && w.toComponentId === fromCompId && wTo === canonFromPinId)
+      );
+    });
 
     if (duplicate) {
       return { valid: false, reason: 'Duplicate connection: these pins are already connected.' };
@@ -104,14 +121,34 @@ export class CircuitEngine {
     return Array.from(this.wires.values());
   }
 
-  public setPinOutput(componentId: string, pinId: string, state: Partial<PinState>) {
-    const key = `${componentId}:${pinId}`;
+  public setPinOutput(componentId: string, pinId: string, state: Partial<PinState> | number) {
+    const canonPinId = this.resolvePinId(componentId, pinId);
+    const key = `${componentId}:${canonPinId}`;
     const current = this.pinStates.get(key) || { digital: 0, dutyCycle: 0, frequency: 0, voltage: 0 };
-    this.pinStates.set(key, { ...current, ...state });
+    const stateObj: Partial<PinState> = typeof state === 'number' ? { digital: state ? 1 : 0 } : state;
+    this.pinStates.set(key, { ...current, ...stateObj });
+  }
+
+  private onResetMcuCallbacks: Array<() => void> = [];
+  public registerResetHandler(cb: () => void): () => void {
+    this.onResetMcuCallbacks.push(cb);
+    return () => {
+      this.onResetMcuCallbacks = this.onResetMcuCallbacks.filter((c) => c !== cb);
+    };
+  }
+  public triggerMcuReset(): void {
+    for (const cb of this.onResetMcuCallbacks) {
+      cb();
+    }
+  }
+
+  public triggerReset(): void {
+    this.triggerMcuReset();
   }
 
   public getPinState(componentId: string, pinId: string): PinState {
-    const key = `${componentId}:${pinId}`;
+    const canonPinId = this.resolvePinId(componentId, pinId);
+    const key = `${componentId}:${canonPinId}`;
     return this.pinStates.get(key) || { digital: 0, dutyCycle: 0, frequency: 0, voltage: 0 };
   }
 
@@ -120,11 +157,12 @@ export class CircuitEngine {
    */
   public getConnectedPins(startCompId: string, startPinId: string): Array<{ compId: string; pinId: string }> {
     const visited = new Set<string>();
-    const queue: Array<{ compId: string; pinId: string }> = [{ compId: startCompId, pinId: startPinId }];
+    const startCanonPin = this.resolvePinId(startCompId, startPinId);
+    const queue: Array<{ compId: string; pinId: string }> = [{ compId: startCompId, pinId: startCanonPin }];
     const results: Array<{ compId: string; pinId: string }> = [];
 
-    const keyFor = (c: string, p: string) => `${c}:${p}`;
-    visited.add(keyFor(startCompId, startPinId));
+    const keyFor = (c: string, p: string) => `${c}:${this.resolvePinId(c, p)}`;
+    visited.add(keyFor(startCompId, startCanonPin));
 
     while (queue.length > 0) {
       const current = queue.shift()!;
@@ -141,10 +179,13 @@ export class CircuitEngine {
             }
           }
         } else if (
-          currentComp.type === 'ARDUINO_UNO_R3' &&
-          (current.pinId === 'GND1' || current.pinId === 'GND2' || current.pinId === 'GND3')
+          (currentComp.type === 'ARDUINO_UNO_R3' || currentComp.type === 'ESP32_DEVKIT_V1') &&
+          (current.pinId.startsWith('GND') || current.pinId === 'GND.1' || current.pinId === 'GND.2' || current.pinId === 'GND.3')
         ) {
-          for (const gPin of ['GND1', 'GND2', 'GND3']) {
+          const gPins = currentComp.type === 'ARDUINO_UNO_R3'
+            ? ['GND1', 'GND2', 'GND3', 'GND.1', 'GND.2', 'GND.3']
+            : ['GND1', 'GND2', 'GND.1', 'GND.2', 'GND'];
+          for (const gPin of gPins) {
             if (!visited.has(keyFor(current.compId, gPin))) {
               visited.add(keyFor(current.compId, gPin));
               queue.push({ compId: current.compId, pinId: gPin });
@@ -154,16 +195,23 @@ export class CircuitEngine {
       }
 
       for (const wire of this.wires.values()) {
+        const wireFromPin = this.resolvePinId(wire.fromComponentId, wire.fromPinId);
+        const wireToPin = this.resolvePinId(wire.toComponentId, wire.toPinId);
+        const currPin = this.resolvePinId(current.compId, current.pinId);
+
         let neighbor: { compId: string; pinId: string } | null = null;
-        if (wire.fromComponentId === current.compId && wire.fromPinId === current.pinId) {
+        if (wire.fromComponentId === current.compId && (wire.fromPinId === current.pinId || wireFromPin === currPin)) {
           neighbor = { compId: wire.toComponentId, pinId: wire.toPinId };
-        } else if (wire.toComponentId === current.compId && wire.toPinId === current.pinId) {
+        } else if (wire.toComponentId === current.compId && (wire.toPinId === current.pinId || wireToPin === currPin)) {
           neighbor = { compId: wire.fromComponentId, pinId: wire.fromPinId };
         }
 
-        if (neighbor && !visited.has(keyFor(neighbor.compId, neighbor.pinId))) {
-          visited.add(keyFor(neighbor.compId, neighbor.pinId));
-          queue.push(neighbor);
+        if (neighbor) {
+          const neighborKey = keyFor(neighbor.compId, neighbor.pinId);
+          if (!visited.has(neighborKey)) {
+            visited.add(neighborKey);
+            queue.push(neighbor);
+          }
         }
       }
     }
@@ -182,7 +230,8 @@ export class CircuitEngine {
     let maxVoltage = 0;
 
     for (const node of connected) {
-      const state = this.pinStates.get(`${node.compId}:${node.pinId}`);
+      const canonId = this.resolvePinId(node.compId, node.pinId);
+      const state = this.pinStates.get(`${node.compId}:${canonId}`);
       if (state) {
         if (state.digital === 1) maxDigital = 1;
         if (state.dutyCycle > maxDuty) maxDuty = state.dutyCycle;
@@ -219,13 +268,15 @@ export class CircuitEngine {
     const mcuId = mcu?.id || 'esp32_1';
 
     // Find Ground net
-    // MCU ground pins: ESP32 has 'GND'; Uno has 'GND1', 'GND2', 'GND3'
-    const mcuGndPins = mcu?.type === 'ARDUINO_UNO_R3' ? ['GND1', 'GND2', 'GND3'] : ['GND'];
+    // MCU ground pins: ESP32 has 'GND', 'GND1', 'GND2'; Uno has 'GND1', 'GND2', 'GND3' (and aliases GND.1..GND.3)
+    const mcuGndPins = mcu?.type === 'ARDUINO_UNO_R3'
+      ? ['GND1', 'GND2', 'GND3', 'GND.1', 'GND.2', 'GND.3']
+      : ['GND', 'GND1', 'GND2', 'GND.1', 'GND.2'];
     const tbGndConnected = this.getConnectedPins(tbId, 'GND');
     const battGndConnected = this.getConnectedPins(battId, 'NEG');
 
-    const tbSharesMcuGnd = tbGndConnected.some((p) => p.compId === mcuId && mcuGndPins.includes(p.pinId));
-    const tbSharesBattGnd = battGndConnected.some((p) => p.compId === tbId && p.pinId === 'GND');
+    const tbSharesMcuGnd = tbGndConnected.some((p) => p.compId === mcuId && mcuGndPins.includes(this.resolvePinId(mcuId, p.pinId)));
+    const tbSharesBattGnd = battGndConnected.some((p) => p.compId === tbId && this.resolvePinId(tbId, p.pinId) === 'GND');
     const hasCommonGround = tbSharesMcuGnd && tbSharesBattGnd;
 
     if (!tbSharesMcuGnd) {
@@ -238,7 +289,7 @@ export class CircuitEngine {
     // Check VCC (Logic Power: 3.3V from ESP32 or 5V/3.3V from Arduino Uno)
     const tbVccConnected = this.getConnectedPins(tbId, 'VCC');
     const logicPowered = tbVccConnected.some(
-      (p) => p.compId === mcuId && (p.pinId === '3V3' || p.pinId === '5V')
+      (p) => p.compId === mcuId && (this.resolvePinId(mcuId, p.pinId) === '3V3' || this.resolvePinId(mcuId, p.pinId) === '5V')
     );
     if (!logicPowered) {
       warnings.push(`TB6612FNG VCC is not connected to ${mcu?.type === 'ARDUINO_UNO_R3' ? '5V' : '3.3V'} (driver logic is unpowered).`);
@@ -246,7 +297,7 @@ export class CircuitEngine {
 
     // Check VM (Motor Power)
     const tbVmConnected = this.getConnectedPins(tbId, 'VM');
-    const motorPowered = tbVmConnected.some((p) => p.compId === battId && p.pinId === 'POS');
+    const motorPowered = tbVmConnected.some((p) => p.compId === battId && this.resolvePinId(battId, p.pinId) === 'POS');
     if (!motorPowered) {
       warnings.push('TB6612FNG VM is not connected to Battery V+ (motors have no drive power).');
     }
@@ -256,9 +307,9 @@ export class CircuitEngine {
       const irGndConnected = this.getConnectedPins(irSensor.id, 'GND');
       const irSharesCommonGnd = irGndConnected.some(
         (p) =>
-          (p.compId === mcuId && mcuGndPins.includes(p.pinId)) ||
-          (p.compId === tbId && p.pinId === 'GND') ||
-          (p.compId === battId && p.pinId === 'NEG')
+          (p.compId === mcuId && mcuGndPins.includes(this.resolvePinId(mcuId, p.pinId))) ||
+          (p.compId === tbId && this.resolvePinId(tbId, p.pinId) === 'GND') ||
+          (p.compId === battId && this.resolvePinId(battId, p.pinId) === 'NEG')
       );
       if (!irSharesCommonGnd) {
         warnings.push('8-Channel IR Sensor Array GND is not connected to common ground.');
@@ -266,7 +317,7 @@ export class CircuitEngine {
 
       const irVccConnected = this.getConnectedPins(irSensor.id, 'VCC');
       const irHasPower = irVccConnected.some(
-        (p) => p.compId === mcuId && (p.pinId === '5V' || p.pinId === '3V3')
+        (p) => p.compId === mcuId && (this.resolvePinId(mcuId, p.pinId) === '5V' || this.resolvePinId(mcuId, p.pinId) === '3V3')
       );
       if (!irHasPower) {
         warnings.push('8-Channel IR Sensor Array VCC is not connected to 5V power supply.');
