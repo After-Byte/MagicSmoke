@@ -269,7 +269,16 @@ export function computeManhattanWireRoute(
     rawPoints.push(p5);
   } else if (!isFromVertical && isToVertical) {
     // Source exits horizontally, destination exits vertically
-    rawPoints.push({ x: lastPoint.x, y: p5.y });
+    if (destObs && (toNormal.y < 0 ? lastPoint.y > destObs.y : lastPoint.y < destObs.y + destObs.height)) {
+      // Coming from opposite side of destination component: clear destObs horizontally towards closest side
+      const clearX = to.x >= (destObs.x + destObs.width / 2)
+        ? destObs.x + destObs.width + pad + toLane
+        : destObs.x - pad - toLane;
+      rawPoints.push({ x: clearX, y: lastPoint.y });
+      rawPoints.push({ x: clearX, y: p5.y });
+    } else {
+      rawPoints.push({ x: lastPoint.x, y: p5.y });
+    }
     rawPoints.push(p5);
   } else if (isFromVertical && isToVertical) {
     // Both exit vertically (e.g. Top to Top, or Top to Bottom)

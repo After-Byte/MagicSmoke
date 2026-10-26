@@ -5,16 +5,16 @@ import { WOKWI_ESP32_DEVKIT_V1_PINS } from './wokwi/wokwiElements';
 
 interface ESP32DevKitV1BoardProps {
   component: ComponentInstance;
-  circuit: CircuitEngine;
-  hoveredPin: { compId: string; pinId: string } | null;
-  dragConnecting: {
+  circuit?: CircuitEngine;
+  hoveredPin?: { compId: string; pinId: string } | null;
+  dragConnecting?: {
     fromCompId: string;
     fromPinId: string;
     target: { compId: string; pinId: string; isValid: boolean; reason?: string } | null;
   } | null;
-  onPinPointerDown: (compId: string, pinId: string, e: React.PointerEvent) => void;
-  onPinHoverEnter: (compId: string, pinId: string) => void;
-  onPinHoverLeave: () => void;
+  onPinPointerDown?: (compId: string, pinId: string, e: React.PointerEvent) => void;
+  onPinHoverEnter?: (compId: string, pinId: string) => void;
+  onPinHoverLeave?: () => void;
   onResetMcu?: () => void;
   isSimulating?: boolean;
 }
@@ -70,12 +70,18 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
   const [isBootPressed, setIsBootPressed] = useState(false);
   const [resetPulseActive, setResetPulseActive] = useState(false);
 
+  // Unique SVG IDs to prevent clashes with multiple boards on canvas
+  const redLedFilterId = 'esp32RedLedFilter_' + component.id;
+  const blueLedFilterId = 'esp32BlueLedFilter_' + component.id;
+  const pinPatternId = 'esp32PinPattern_' + component.id;
+  const smallPinPatternId = 'esp32SmallPinPattern_' + component.id;
+
   // Power state: either simulating or circuit has common ground + logic
-  const evalResult = circuit.evaluateCircuit();
-  const isPowered = isSimulating || evalResult.logicPowered;
+  const evalResult = circuit ? circuit.evaluateCircuit() : { logicPowered: false };
+  const isPowered = isSimulating || Boolean(evalResult && evalResult.logicPowered);
 
   // Live state of Built-in LED (GPIO 2)
-  const d2State = circuit.getPinState(component.id, 'D2');
+  const d2State = circuit ? circuit.getPinState(component.id, 'D2') : { digital: 0, dutyCycle: 0, frequency: 0, voltage: 0 };
   const isD2Active = (d2State.digital === 1 || d2State.dutyCycle > 0) && isPowered;
 
   const handleResetDown = (e: React.PointerEvent) => {
@@ -84,7 +90,7 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
     setIsResetPressed(true);
     setResetPulseActive(true);
     if (onResetMcu) onResetMcu();
-    circuit.triggerMcuReset();
+    if (circuit) circuit.triggerMcuReset();
   };
 
   const handleResetUp = (e: React.PointerEvent) => {
@@ -120,7 +126,7 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
     <g className="esp32-devkit-v1-physical-board select-none">
       <defs>
         {/* Glow Filters for Live LEDs */}
-        <filter id="esp32RedLedFilter" x="-1" y="-1" width="3" height="3">
+        <filter id={redLedFilterId} x="-1" y="-1" width="3" height="3">
           <feGaussianBlur stdDeviation="2.2" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -128,7 +134,7 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
           </feMerge>
         </filter>
 
-        <filter id="esp32BlueLedFilter" x="-1" y="-1" width="3" height="3">
+        <filter id={blueLedFilterId} x="-1" y="-1" width="3" height="3">
           <feGaussianBlur stdDeviation="2.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -137,7 +143,7 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
         </filter>
 
         {/* Wokwi Gold Castellated Solder Pad Pattern */}
-        <pattern id="esp32-pin-pattern" height="4.6" width="5" patternUnits="userSpaceOnUse">
+        <pattern id={pinPatternId} height="4.6" width="5" patternUnits="userSpaceOnUse">
           <path
             d="m3.5 2.85c0.268 1.82e-4 0.525-0.106 0.716-0.296 0.187-0.19 0.296-0.445 0.297-0.713l5.7e-4 -0.836c1.82e-4 -0.268-0.109-0.525-0.296-0.716-0.19-0.19-0.447-0.296-0.715-0.297l-3.5-0.0024-0.0019 2.85z"
             fill="#d1c479"
@@ -145,7 +151,7 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
           />
         </pattern>
 
-        <pattern id="esp32-small-pin-pattern" height="4.6" width="2.5" patternUnits="userSpaceOnUse">
+        <pattern id={smallPinPatternId} height="4.6" width="2.5" patternUnits="userSpaceOnUse">
           <path
             d="m1.4 1.32c0-0.138-0.0547-0.271-0.153-0.37-0.098-0.0965-0.23-0.153-0.368-0.153h-0.432c-0.138 0-0.271 0.0563-0.37 0.153-0.098 0.098-0.153 0.231-0.153 0.37v1.81h1.47z"
             fill="#f5f9f0"
@@ -164,9 +170,9 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
         />
 
         {/* 2. ESP-WROOM-32 METALLIC SHIELD & CHIP PADS */}
-        <rect transform="translate(85,34)" width="4.8" height="55" fill="url(#esp32-pin-pattern)" />
-        <rect transform="translate(20.5,87) rotate(180)" width="4.8" height="55" fill="url(#esp32-pin-pattern)" />
-        <rect transform="translate(80,98) rotate(90)" width="4.8" height="55" fill="url(#esp32-pin-pattern)" />
+        <rect transform="translate(85,34)" width="4.8" height="55" fill={`url(#${pinPatternId})`} />
+        <rect transform="translate(20.5,87) rotate(180)" width="4.8" height="55" fill={`url(#${pinPatternId})`} />
+        <rect transform="translate(80,98) rotate(90)" width="4.8" height="55" fill={`url(#${pinPatternId})`} />
         <rect x="20" y="24.8" width="65.6" height="73.3" fill="#808080" fillRule="evenodd" rx="2" />
 
         {/* Silkscreen text on RF Shield */}
@@ -254,22 +260,22 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
           <rect x="35" y="108" width="3.83" height="9.3" fill="#e5e5e5" rx="0.5" />
           <rect x="35" y="111" width="3.83" height="5.31" fill="#f5ecde" />
           {isPowered && (
-            <circle cx="37" cy="113.5" r="3.5" fill="#ef4444" filter="url(#esp32RedLedFilter)" />
+            <circle cx="37" cy="113.5" r="3.5" fill="#ef4444" filter={`url(#${redLedFilterId})`} />
           )}
 
           {/* D2 Built-in LED */}
           <rect x="69.5" y="108" width="3.83" height="9.3" fill="#e5e5e5" rx="0.5" />
           <rect x="69.5" y="110" width="3.83" height="5.31" fill="#f5ecde" />
           {isD2Active && (
-            <circle cx="71.5" cy="112.5" r="3.5" fill="#3b82f6" filter="url(#esp32BlueLedFilter)" />
+            <circle cx="71.5" cy="112.5" r="3.5" fill="#3b82f6" filter={`url(#${blueLedFilterId})`} />
           )}
         </g>
 
         {/* 8. CP2102 USB INTERFACE BRIDGE CHIP */}
-        <rect transform="translate(69,137)" width="13.9" height="3" fill="url(#esp32-small-pin-pattern)" />
-        <rect transform="translate(82.8,160.5) rotate(180)" width="13.9" height="3" fill="url(#esp32-small-pin-pattern)" />
-        <rect transform="translate(87.2,142) rotate(90)" width="13.9" height="3" fill="url(#esp32-small-pin-pattern)" />
-        <rect transform="translate(64,155.8) rotate(270)" width="13.9" height="3" fill="url(#esp32-small-pin-pattern)" />
+        <rect transform="translate(69,137)" width="13.9" height="3" fill={`url(#${smallPinPatternId})`} />
+        <rect transform="translate(82.8,160.5) rotate(180)" width="13.9" height="3" fill={`url(#${smallPinPatternId})`} />
+        <rect transform="translate(87.2,142) rotate(90)" width="13.9" height="3" fill={`url(#${smallPinPatternId})`} />
+        <rect transform="translate(64,155.8) rotate(270)" width="13.9" height="3" fill={`url(#${smallPinPatternId})`} />
         <rect x="66.9" y="140" width="17.4" height="17.4" fill="#333" rx="1" />
 
         {/* 9. WOKWI SILKSCREEN PIN LABELS */}
@@ -320,18 +326,18 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
         const isTargetValid = isTargetCandidate && dragConnecting?.target?.isValid;
         const isTargetInvalid = isTargetCandidate && !dragConnecting?.target?.isValid;
 
-        const liveState = circuit.getPinState(component.id, pin.id);
+        const liveState: PinState = circuit ? circuit.getPinState(component.id, pin.id) : { digital: 0, dutyCycle: 0, frequency: 0, voltage: 0 };
         const socketIndicator = getSocketIndicatorColor(pin, liveState);
 
         return (
           <g
             key={pin.id}
-            onPointerDown={(e) => onPinPointerDown(component.id, pin.id, e)}
-            onMouseDown={(e) => onPinPointerDown(component.id, pin.id, e as unknown as React.PointerEvent)}
-            onPointerEnter={() => onPinHoverEnter(component.id, pin.id)}
-            onMouseEnter={() => onPinHoverEnter(component.id, pin.id)}
-            onPointerLeave={onPinHoverLeave}
-            onMouseLeave={onPinHoverLeave}
+            onPointerDown={(e) => onPinPointerDown && onPinPointerDown(component.id, pin.id, e)}
+            onMouseDown={(e) => onPinPointerDown && onPinPointerDown(component.id, pin.id, e as unknown as React.PointerEvent)}
+            onPointerEnter={() => onPinHoverEnter && onPinHoverEnter(component.id, pin.id)}
+            onMouseEnter={() => onPinHoverEnter && onPinHoverEnter(component.id, pin.id)}
+            onPointerLeave={() => onPinHoverLeave && onPinHoverLeave()}
+            onMouseLeave={() => onPinHoverLeave && onPinHoverLeave()}
             className="cursor-crosshair group"
             style={{ pointerEvents: 'all' }}
             data-testid={`pin-${component.id}-${pin.id}`}
@@ -363,8 +369,8 @@ export const ESP32DevKitV1Board: React.FC<ESP32DevKitV1BoardProps> = ({
               fill="#000000"
               fillOpacity="0.001"
               style={{ pointerEvents: 'all' }}
-              onPointerDown={(e) => onPinPointerDown(component.id, pin.id, e)}
-              onMouseDown={(e) => onPinPointerDown(component.id, pin.id, e as unknown as React.PointerEvent)}
+              onPointerDown={(e) => onPinPointerDown && onPinPointerDown(component.id, pin.id, e)}
+              onMouseDown={(e) => onPinPointerDown && onPinPointerDown(component.id, pin.id, e as unknown as React.PointerEvent)}
               data-testid={`pin-circle-${component.id}-${pin.id}`}
             />
 

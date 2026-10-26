@@ -8,16 +8,16 @@ export { WOKWI_ARDUINO_UNO_PINS, HEADER_PITCH_MM };
 
 interface ArduinoUnoR3BoardProps {
   component: ComponentInstance;
-  circuit: CircuitEngine;
-  hoveredPin: { compId: string; pinId: string } | null;
-  dragConnecting: {
+  circuit?: CircuitEngine;
+  hoveredPin?: { compId: string; pinId: string } | null;
+  dragConnecting?: {
     fromCompId: string;
     fromPinId: string;
     target: { compId: string; pinId: string; isValid: boolean; reason?: string } | null;
   } | null;
-  onPinPointerDown: (compId: string, pinId: string, e: React.PointerEvent) => void;
-  onPinHoverEnter: (compId: string, pinId: string) => void;
-  onPinHoverLeave: () => void;
+  onPinPointerDown?: (compId: string, pinId: string, e: React.PointerEvent) => void;
+  onPinHoverEnter?: (compId: string, pinId: string) => void;
+  onPinHoverLeave?: () => void;
   onResetMcu?: () => void;
   isSimulating?: boolean;
 }
@@ -70,17 +70,25 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
   const [isResetPressed, setIsResetPressed] = useState(false);
   const [resetPulseActive, setResetPulseActive] = useState(false);
 
+  // Unique SVG IDs to prevent clashes when multiple boards are on canvas
+  const greenLedGlowId = 'greenLedGlow_' + component.id;
+  const amberLedGlowId = 'amberLedGlow_' + component.id;
+  const usbSilverGradId = 'usbSilverGrad_' + component.id;
+  const crystalSilverGradId = 'crystalSilverGrad_' + component.id;
+  const pcbTealGradId = 'pcbTealGrad_' + component.id;
+  const pinsFemalePitchId = 'pinsFemalePitch_' + component.id;
+
   // Check board power: either actively simulating, or circuit logic is powered
-  const evalResult = circuit.evaluateCircuit();
-  const isPowered = isSimulating || evalResult.logicPowered;
+  const evalResult = circuit ? circuit.evaluateCircuit() : { logicPowered: false };
+  const isPowered = isSimulating || Boolean(evalResult && evalResult.logicPowered);
 
   // Live state of Built-in LED L (Pin 13)
-  const d13State = circuit.getPinState(component.id, 'D13');
+  const d13State = circuit ? circuit.getPinState(component.id, 'D13') : { digital: 0, dutyCycle: 0, frequency: 0, voltage: 0 };
   const isD13Active = (d13State.digital === 1 || d13State.dutyCycle > 0 || resetPulseActive) && isPowered;
 
   // Live state of TX & RX
-  const d1State = circuit.getPinState(component.id, 'D1');
-  const d0State = circuit.getPinState(component.id, 'D0');
+  const d1State = circuit ? circuit.getPinState(component.id, 'D1') : { digital: 0, dutyCycle: 0, frequency: 0, voltage: 0 };
+  const d0State = circuit ? circuit.getPinState(component.id, 'D0') : { digital: 0, dutyCycle: 0, frequency: 0, voltage: 0 };
   const isTxActive = (d1State.digital === 1 || d1State.dutyCycle > 0) && isPowered;
   const isRxActive = (d0State.digital === 1 || d0State.dutyCycle > 0) && isPowered;
 
@@ -94,7 +102,7 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
     if (onResetMcu) {
       onResetMcu();
     }
-    circuit.triggerMcuReset();
+    if (circuit) circuit.triggerMcuReset();
   };
 
   const handleResetUp = (e: React.PointerEvent) => {
@@ -133,7 +141,7 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
     <g className="arduino-uno-physical-board select-none">
       <defs>
         {/* Glow Filters for Live LEDs */}
-        <filter id="greenLedGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <filter id={greenLedGlowId} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="3.5" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -141,7 +149,7 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
           </feMerge>
         </filter>
 
-        <filter id="amberLedGlow" x="-50%" y="-50%" width="200%" height="200%">
+        <filter id={amberLedGlowId} x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="3.2" result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
@@ -150,27 +158,27 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
         </filter>
 
         {/* Metallic Bevel Gradients */}
-        <linearGradient id="usbSilverGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={usbSilverGradId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#f1f5f9" />
           <stop offset="35%" stopColor="#cbd5e1" />
           <stop offset="70%" stopColor="#94a3b8" />
           <stop offset="100%" stopColor="#64748b" />
         </linearGradient>
 
-        <linearGradient id="crystalSilverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+        <linearGradient id={crystalSilverGradId} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" stopColor="#f8fafc" />
           <stop offset="40%" stopColor="#cbd5e1" />
           <stop offset="80%" stopColor="#94a3b8" />
           <stop offset="100%" stopColor="#64748b" />
         </linearGradient>
 
-        <linearGradient id="pcbTealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={pcbTealGradId} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#007f82" />
           <stop offset="100%" stopColor="#006063" />
         </linearGradient>
 
         {/* Wokwi 2.54mm Female Header Socket Pattern */}
-        <pattern id="pins-female-pitch" width="10.5" height="15" patternUnits="userSpaceOnUse">
+        <pattern id={pinsFemalePitchId} width="10.5" height="15" patternUnits="userSpaceOnUse">
           <rect x="0" y="0" width="10.5" height="15" fill="#18181b" stroke="#27272a" strokeWidth="0.8" />
           <rect x="2.5" y="4.5" width="5.5" height="6" rx="0.8" fill="#09090b" stroke="#333" strokeWidth="0.5" />
           <rect x="3.5" y="5.5" width="3.5" height="4" rx="0.5" fill="#3f3f46" opacity="0.6" />
@@ -199,7 +207,7 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
           Q 28 16 34 16
           Z
         `}
-        fill="url(#pcbTealGrad)"
+        fill={`url(#${pcbTealGradId})`}
         stroke="#004d4f"
         strokeWidth="1.6"
       />
@@ -250,7 +258,7 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
           width="44"
           height="50"
           rx="3"
-          fill="url(#usbSilverGrad)"
+          fill={`url(#${usbSilverGradId})`}
           stroke="#475569"
           strokeWidth="1.2"
         />
@@ -319,7 +327,7 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
           width="36"
           height="16"
           rx="8"
-          fill="url(#crystalSilverGrad)"
+          fill={`url(#${crystalSilverGradId})`}
           stroke="#64748b"
           strokeWidth="1.2"
         />
@@ -580,39 +588,38 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
       <rect x="252" y="205" width="65" height="15" rx="1.5" fill="#18181b" stroke="#27272a" strokeWidth="0.8" />
 
       {/* Silkscreen Section Labels */}
-      <text x="228" y="33" textAnchor="middle" fill="#ffffff" fontSize="6.5" fontFamily="monospace" fontWeight="700" letterSpacing="0.04em">
-        DIGITAL - PWM~
+      <line x1="165" y1="41" x2="198" y2="41" stroke="#ffffff" strokeWidth="0.8" />
+      <text x="227.5" y="43" textAnchor="middle" fill="#ffffff" fontSize="6" fontFamily="monospace" fontWeight="700" letterSpacing="0.04em">
+        DIGITAL (PWM ~)
       </text>
-      <line x1="170" y1="31" x2="198" y2="31" stroke="#ffffff" strokeWidth="0.8" />
-      <line x1="258" y1="31" x2="286" y2="31" stroke="#ffffff" strokeWidth="0.8" />
+      <line x1="256" y1="41" x2="310" y2="41" stroke="#ffffff" strokeWidth="0.8" />
 
-      <text x="195" y="200" textAnchor="middle" fill="#ffffff" fontSize="6.5" fontFamily="monospace" fontWeight="700" letterSpacing="0.04em">
+      <text x="200" y="182" textAnchor="middle" fill="#ffffff" fontSize="6.5" fontFamily="monospace" fontWeight="700" letterSpacing="0.04em">
         POWER
       </text>
-      <text x="284" y="200" textAnchor="middle" fill="#ffffff" fontSize="6.5" fontFamily="monospace" fontWeight="700" letterSpacing="0.04em">
+      <text x="284" y="182" textAnchor="middle" fill="#ffffff" fontSize="6.5" fontFamily="monospace" fontWeight="700" letterSpacing="0.04em">
         ANALOG IN
       </text>
 
       {/* Top Pin Labels */}
       <g fill="#ffffff" fontSize="6.5" fontFamily="monospace" fontWeight="700">
-        <text x="144.5" y="32" textAnchor="middle">AREF</text>
-        <rect x="150" y="25" width="10" height="9" fill="none" stroke="#ffffff" strokeWidth="0.8" />
-        <text x="155" y="32" textAnchor="middle">GND</text>
-        <text x="165.5" y="32" textAnchor="middle">13</text>
-        <text x="176" y="32" textAnchor="middle">12</text>
-        <text x="186.5" y="32" textAnchor="middle">~11</text>
-        <text x="197" y="32" textAnchor="middle">~10</text>
-        <text x="207.5" y="32" textAnchor="middle">~9</text>
-        <text x="218" y="32" textAnchor="middle">8</text>
+        <text x="144.5" y="36" textAnchor="middle" transform="rotate(-90 144.5 36)">AREF</text>
+        <text x="155" y="36" textAnchor="middle" transform="rotate(-90 155 36)">GND</text>
+        <text x="165.5" y="33" textAnchor="middle">13</text>
+        <text x="176" y="33" textAnchor="middle">12</text>
+        <text x="186.5" y="33" textAnchor="middle">~11</text>
+        <text x="197" y="33" textAnchor="middle">~10</text>
+        <text x="207.5" y="33" textAnchor="middle">~9</text>
+        <text x="218" y="33" textAnchor="middle">8</text>
 
-        <text x="236.5" y="32" textAnchor="middle">7</text>
-        <text x="247" y="32" textAnchor="middle">~6</text>
-        <text x="257.5" y="32" textAnchor="middle">~5</text>
-        <text x="268" y="32" textAnchor="middle">4</text>
-        <text x="278.5" y="32" textAnchor="middle">~3</text>
-        <text x="289" y="32" textAnchor="middle">2</text>
-        <text x="299.5" y="32" textAnchor="middle">TX</text>
-        <text x="310" y="32" textAnchor="middle">RX</text>
+        <text x="236.5" y="33" textAnchor="middle">7</text>
+        <text x="247" y="33" textAnchor="middle">~6</text>
+        <text x="257.5" y="33" textAnchor="middle">~5</text>
+        <text x="268" y="33" textAnchor="middle">4</text>
+        <text x="278.5" y="33" textAnchor="middle">~3</text>
+        <text x="289" y="33" textAnchor="middle">2</text>
+        <text x="299.5" y="33" textAnchor="middle">TX</text>
+        <text x="310" y="33" textAnchor="middle">RX</text>
       </g>
 
       {/* Bottom Pin Labels */}
@@ -620,17 +627,17 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
         <text x="169" y="196" textAnchor="middle" transform="rotate(-90 169 196)">IOREF</text>
         <text x="179.5" y="196" textAnchor="middle" transform="rotate(-90 179.5 196)">RESET</text>
         <text x="190" y="196" textAnchor="middle" transform="rotate(-90 190 196)">3.3V</text>
-        <text x="200.5" y="196" textAnchor="middle" transform="rotate(-90 200.5 196)">5V</text>
-        <rect x="206" y="184" width="21" height="11" fill="none" stroke="#ffffff" strokeWidth="0.8" />
-        <text x="216" y="192" textAnchor="middle">GND</text>
-        <text x="232" y="196" textAnchor="middle" transform="rotate(-90 232 196)">Vin</text>
+        <text x="200.5" y="198" textAnchor="middle">5V</text>
+        <text x="211" y="198" textAnchor="middle">GND</text>
+        <text x="221.5" y="198" textAnchor="middle">GND</text>
+        <text x="232" y="196" textAnchor="middle" transform="rotate(-90 232 196)">VIN</text>
 
-        <text x="257.5" y="194" textAnchor="middle">A0</text>
-        <text x="268" y="194" textAnchor="middle">A1</text>
-        <text x="278.5" y="194" textAnchor="middle">A2</text>
-        <text x="289" y="194" textAnchor="middle">A3</text>
-        <text x="299.5" y="194" textAnchor="middle">A4</text>
-        <text x="310" y="194" textAnchor="middle">A5</text>
+        <text x="257.5" y="198" textAnchor="middle">A0</text>
+        <text x="268" y="198" textAnchor="middle">A1</text>
+        <text x="278.5" y="198" textAnchor="middle">A2</text>
+        <text x="289" y="198" textAnchor="middle">A3</text>
+        <text x="299.5" y="198" textAnchor="middle">A4</text>
+        <text x="310" y="198" textAnchor="middle">A5</text>
       </g>
 
       {/* 13. INTERACTIVE FEMALE HEADER SOCKET HIT TARGETS & LIVE STATE */}
@@ -643,19 +650,19 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
         const isTargetValid = isTargetCandidate && dragConnecting?.target?.isValid;
         const isTargetInvalid = isTargetCandidate && !dragConnecting?.target?.isValid;
 
-        const liveState = circuit.getPinState(component.id, pin.id);
+        const liveState: PinState = circuit ? circuit.getPinState(component.id, pin.id) : { digital: 0, dutyCycle: 0, frequency: 0, voltage: 0 };
         const socketIndicator = getSocketIndicatorColor(pin, liveState);
         const wokwiName = MAGIC_TO_WOKWI_PIN_MAP[pin.id] || pin.id;
 
         return (
           <g
             key={pin.id}
-            onPointerDown={(e) => onPinPointerDown(component.id, pin.id, e)}
-            onMouseDown={(e) => onPinPointerDown(component.id, pin.id, e as unknown as React.PointerEvent)}
-            onPointerEnter={() => onPinHoverEnter(component.id, pin.id)}
-            onMouseEnter={() => onPinHoverEnter(component.id, pin.id)}
-            onPointerLeave={onPinHoverLeave}
-            onMouseLeave={onPinHoverLeave}
+            onPointerDown={(e) => onPinPointerDown && onPinPointerDown(component.id, pin.id, e)}
+            onMouseDown={(e) => onPinPointerDown && onPinPointerDown(component.id, pin.id, e as unknown as React.PointerEvent)}
+            onPointerEnter={() => onPinHoverEnter && onPinHoverEnter(component.id, pin.id)}
+            onMouseEnter={() => onPinHoverEnter && onPinHoverEnter(component.id, pin.id)}
+            onPointerLeave={() => onPinHoverLeave && onPinHoverLeave()}
+            onMouseLeave={() => onPinHoverLeave && onPinHoverLeave()}
             className="cursor-crosshair group"
             style={{ pointerEvents: 'all' }}
             data-testid={`pin-${component.id}-${pin.id}`}
@@ -695,8 +702,8 @@ export const ArduinoUnoR3Board: React.FC<ArduinoUnoR3BoardProps> = ({
               fill="#000000"
               fillOpacity="0.001"
               style={{ pointerEvents: 'all' }}
-              onPointerDown={(e) => onPinPointerDown(component.id, pin.id, e)}
-              onMouseDown={(e) => onPinPointerDown(component.id, pin.id, e as unknown as React.PointerEvent)}
+              onPointerDown={(e) => onPinPointerDown && onPinPointerDown(component.id, pin.id, e)}
+              onMouseDown={(e) => onPinPointerDown && onPinPointerDown(component.id, pin.id, e as unknown as React.PointerEvent)}
               data-testid={`pin-circle-${component.id}-${pin.id}`}
             />
 

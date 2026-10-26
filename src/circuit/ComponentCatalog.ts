@@ -42,7 +42,7 @@ export const COMPONENT_CATALOG: CatalogItem[] = [
     specs: {
       voltage: '5V Logic / 7-12V Vin',
       interfaces: '14 GPIO (6 PWM), 6 ADC, UART, SPI, I2C',
-      dimensions: '220 × 350 px',
+      dimensions: '330 × 230 px',
     },
     simulationStatus: 'fully_simulated',
     instantiate: (customId, pos) =>
@@ -57,7 +57,7 @@ export const COMPONENT_CATALOG: CatalogItem[] = [
     specs: {
       voltage: '3.3V Logic / 5V USB',
       interfaces: 'GPIO, PWM (20kHz), Serial (115200)',
-      dimensions: '200 × 235 px',
+      dimensions: '160.5 × 301.5 px',
     },
     simulationStatus: 'fully_simulated',
     instantiate: (customId, pos) =>

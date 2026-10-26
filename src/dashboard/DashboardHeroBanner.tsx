@@ -34,18 +34,18 @@ export const DashboardHeroBanner: React.FC<DashboardHeroBannerProps> = ({
         }}
       >
         <img
-          src={autonomousRobotImg}
-          alt="Autonomous line follower robot"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center',
-          }}
-        />
+    src="/neon-line-follower-arena.png"
+    alt="Neon Line-Follower Robot Arena"
+    className="absolute inset-0 w-full h-full object-cover object-[55%_center]"
+    style={{
+      position: 'absolute',
+      inset: 0,
+      width: '100%',
+      height: '100%',
+      objectFit: 'cover',
+      objectPosition: '55% center',
+    }}
+  />
       </div>
 
       {/* Right Hero Content */}
